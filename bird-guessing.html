@@ -1,0 +1,3599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Knowledge Tree</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0f1117;
+  --bg2: #181a24;
+  --bg3: #1e2030;
+  --bg4: #252839;
+  --surface: #2a2d40;
+  --border: #353953;
+  --border2: #454a6b;
+  --text: #e2e4f0;
+  --text2: #a0a4c0;
+  --text3: #6b70a0;
+  --accent: #7c6ff7;
+  --accent2: #9b8fff;
+  --accent-bg: rgba(124,111,247,0.12);
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.12);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.12);
+  --amber: #fbbf24;
+  --amber-bg: rgba(251,191,36,0.12);
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+/* Header */
+header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  color: var(--accent2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons */
+button {
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.15s;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: var(--accent2); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+.btn-danger {
+  background: var(--red-bg);
+  color: var(--red);
+}
+.btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+.btn-success {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+.btn-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.btn-icon:hover { background: var(--bg3); color: var(--text); }
+
+/* Mode Toggle */
+.mode-toggle {
+  display: flex;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  padding: 3px;
+  gap: 2px;
+}
+
+.mode-toggle button {
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text3);
+  background: transparent;
+}
+.mode-toggle button.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Main Layout */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Category Cards Grid */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.category-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.category-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: var(--shadow); }
+.category-card.locked { opacity: 0.5; cursor: not-allowed; }
+.category-card.locked:hover { transform: none; box-shadow: none; }
+.category-card.completed { border-color: var(--green); }
+
+.category-card .lock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15,17,23,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  z-index: 2;
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.category-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.category-badge {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.category-desc {
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.category-progress {
+  height: 4px;
+  background: var(--bg4);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.category-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.category-card.completed .category-progress-fill { background: var(--green); }
+
+.category-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text3);
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  margin-top: 32px;
+}
+
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+}
+
+/* Quiz View */
+.quiz-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.quiz-image-area {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 20px;
+  position: relative;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quiz-image-area img {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: contain;
+  display: block;
+}
+
+.quiz-image-counter {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.quiz-image-caption {
+  text-align: center;
+  color: var(--text3);
+  padding: 6px 12px 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quiz-image-nav {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.quiz-image-nav button {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.quiz-image-nav button:hover { background: rgba(0,0,0,0.8); }
+
+.quiz-input-area {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.quiz-input-area input {
+  width: 100%;
+  padding: 14px 18px;
+  background: var(--bg2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.quiz-input-area input:focus { border-color: var(--accent); }
+.quiz-input-area input.correct { border-color: var(--green); background: var(--green-bg); }
+.quiz-input-area input.wrong { border-color: var(--red); background: var(--red-bg); }
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 50;
+  display: none;
+}
+.autocomplete-dropdown.show { display: block; }
+
+.autocomplete-item {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text2);
+}
+.autocomplete-item:hover, .autocomplete-item.highlighted {
+  background: var(--accent-bg);
+  color: var(--text);
+}
+
+.quiz-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.autocomplete-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text3);
+  cursor: pointer;
+  user-select: none;
+}
+.autocomplete-toggle input { display: none; }
+.autocomplete-toggle .toggle-track {
+  width: 36px; height: 20px;
+  background: var(--bg4);
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.2s;
+}
+.autocomplete-toggle input:checked + .toggle-track { background: var(--accent); }
+.autocomplete-toggle .toggle-thumb {
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.2s;
+}
+.autocomplete-toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
+
+/* Feedback / Confusion */
+.quiz-feedback {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  display: none;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.quiz-feedback.show { display: block; }
+.quiz-feedback.correct { background: var(--green-bg); border: 1px solid rgba(74,222,128,0.3); }
+.quiz-feedback.wrong { background: var(--red-bg); border: 1px solid rgba(248,113,113,0.3); }
+.quiz-feedback.confusion { background: var(--amber-bg); border: 1px solid rgba(251,191,36,0.3); }
+
+.feedback-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+.quiz-feedback.correct .feedback-title { color: var(--green); }
+.quiz-feedback.wrong .feedback-title { color: var(--red); }
+.quiz-feedback.confusion .feedback-title { color: var(--amber); }
+
+.feedback-text {
+  font-size: 0.88rem;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+.confusion-images {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.confusion-images img {
+  max-width: 200px;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+
+
+/* Editor Styles */
+.editor-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.editor-panel h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.form-select option { background: var(--bg3); color: var(--text); }
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+.form-row > * { flex: 1; }
+
+/* Image upload area */
+.image-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.image-upload-area:hover, .image-upload-area.dragover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--text2);
+}
+.image-upload-area input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.image-url-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.image-thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.image-thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-thumb .remove-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(248,113,113,0.9);
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+}
+
+.image-thumb-with-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 80px;
+}
+
+.caption-input {
+  width: 100%;
+  padding: 3px 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  outline: none;
+  text-align: center;
+}
+.caption-input:focus { border-color: var(--accent); }
+.caption-input::placeholder { color: var(--text3); font-style: italic; }
+
+/* Items list in editor */
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.item-row .item-name { flex: 1; font-size: 0.9rem; }
+.item-row .item-images-count { font-size: 0.78rem; color: var(--text3); }
+
+/* Prereq tags */
+.prereq-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.prereq-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--accent-bg);
+  color: var(--accent2);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.prereq-tag .remove-prereq {
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.7;
+}
+.prereq-tag .remove-prereq:hover { opacity: 1; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.15s ease;
+}
+.modal-overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: modalSlide 0.2s ease;
+}
+@keyframes modalSlide {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+/* Confusion editor */
+.confusion-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.confusion-row .confusion-items {
+  flex: 1;
+  font-size: 0.88rem;
+}
+.confusion-row .confusion-items span { color: var(--amber); font-weight: 500; }
+
+/* Back button */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text3);
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 6px 0;
+  margin-bottom: 16px;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+}
+.back-link:hover { color: var(--text); }
+
+/* No data placeholder */
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text3);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
+.empty-state p { font-size: 0.95rem; margin-bottom: 16px; }
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.88rem;
+  z-index: 300;
+  animation: toastIn 0.25s ease;
+  box-shadow: var(--shadow);
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* GBIF progress bar */
+.gbif-status { margin-top: 8px; font-size: 0.82rem; }
+.gbif-status-ok { color: var(--green); }
+.gbif-status-err { color: var(--red); }
+.gbif-status-err a { color: var(--accent2); text-decoration: underline; }
+.gbif-progress { margin-top: 8px; }
+.gbif-progress-text { font-size: 0.8rem; color: var(--text2); margin-bottom: 6px; }
+.gbif-progress-bar {
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.gbif-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* GBIF autocomplete items in editor */
+.gbif-ac-item { padding: 8px 12px !important; }
+.gbif-ac-main { font-weight: 500; }
+.gbif-ac-sub { font-size: 0.78rem; color: var(--text3); margin-top: 2px; }
+
+/* Wikimedia photo picker */
+.wiki-picker {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+.wiki-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.84rem;
+}
+.wiki-picker-query { color: var(--text2); }
+.wiki-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 6px;
+  padding: 10px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.wiki-photo-card {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.15s;
+}
+.wiki-photo-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.wiki-photo-card:hover { border-color: var(--accent); }
+.wiki-photo-card.selected { border-color: var(--green); }
+.wiki-photo-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: 2px solid rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+.wiki-photo-card.selected .wiki-photo-check {
+  background: var(--green);
+  border-color: var(--green);
+}
+.wiki-photo-license {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wiki-picker-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Popup stat cards */
+.popup-stat-card {
+  flex: 1;
+  min-width: 70px;
+  padding: 12px 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+.popup-stat-value {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  color: var(--accent2);
+}
+.popup-stat-label {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Mastery celebration popup */
+.mastery-popup {
+  text-align: center;
+  padding: 32px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.mastery-icon {
+  font-size: 3.5rem;
+  margin-bottom: 12px;
+  animation: masteryBounce 0.6s ease;
+}
+@keyframes masteryBounce {
+  0% { transform: scale(0) rotate(-20deg); }
+  50% { transform: scale(1.3) rotate(5deg); }
+  70% { transform: scale(0.9) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.mastery-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  color: var(--green);
+  margin-bottom: 8px;
+}
+.mastery-subtitle {
+  font-size: 0.95rem;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+/* Unlock announcement */
+.unlock-announcement {
+  padding: 16px;
+  background: var(--green-bg);
+  border: 1px solid rgba(74,222,128,0.25);
+  border-radius: var(--radius);
+  margin-top: 16px;
+  text-align: left;
+}
+.unlock-announcement-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+.unlock-announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.unlock-announcement-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.unlock-announcement-icon { font-size: 1.1rem; }
+
+/* Confetti */
+.mastery-confetti {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 10;
+}
+.confetti-piece {
+  position: absolute;
+  top: -10px;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+  opacity: 0.9;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
+}
+
+/* Mastery dots */
+.mastery-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 4px;
+}
+.mastery-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: transparent;
+  transition: all 0.3s;
+}
+.mastery-dot.filled {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 0 6px rgba(74,222,128,0.4);
+}
+.mastery-dot.half {
+  background: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 0 6px rgba(251,191,36,0.3);
+}
+
+.quiz-stats-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+.quiz-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.quiz-stat .stat-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.quiz-stat strong { color: var(--text); }
+
+.quiz-item-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin-bottom: 12px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .app-container { padding: 16px; }
+  .categories-grid { grid-template-columns: 1fr; }
+  .quiz-image-area { min-height: 200px; }
+  .form-row { flex-direction: column; }
+  .header-actions { gap: 4px; }
+  .btn { padding: 7px 12px; font-size: 0.8rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌳</div>
+    Knowledge Tree
+  </div>
+  <div class="header-actions">
+    <div class="mode-toggle" id="modeToggle">
+      <button class="active" data-mode="learn">Learn</button>
+      <button data-mode="editor">Editor</button>
+    </div>
+    <button class="btn-icon" onclick="showImportExportModal()" title="Import / Export">⇅</button>
+  </div>
+</header>
+
+<div class="app-container" id="appContainer"></div>
+
+<!-- Modal container -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║                         KNOWLEDGE TREE v1.0                                ║
+ * ║                                                                            ║
+ * ║  ⚠  UPDATE THIS COMMENT BLOCK WHENEVER FUNCTIONALITY CHANGES  ⚠           ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ *
+ * OVERVIEW
+ * ────────
+ * A single-file HTML/CSS/JS application for learning to recognize things
+ * (birds, insects, trees, flags, etc.) through image-based quizzes. It doubles
+ * as its own editor — the same file lets you create learning content and study it.
+ *
+ * FEATURES
+ * ────────
+ * • Tech-tree category system: categories can have prerequisite categories.
+ *   Completing one category (reaching a configurable unlock threshold) unlocks
+ *   others, similar to a tech tree in strategy games.
+ *
+ * • Image quiz: the user is shown one image at a time (randomized order) and
+ *   must type the name. Supports multiple images per item (e.g., male/female
+ *   dimorphism). User can cycle through images with prev/next buttons.
+ *
+ * • Fuzzy matching via Levenshtein distance: small typos are forgiven.
+ *   Threshold scales with name length (≤1 for short, ≤2 for medium, ≤3 for long).
+ *   Additionally, a toggleable autocomplete dropdown is available.
+ *
+ * • Confusion pairs: editor-authored explanations (with optional comparison
+ *   images) that trigger when the user confuses two commonly mixed-up items.
+ *   Bidirectional — if A↔B is defined, guessing A when B is correct (or vice
+ *   versa) shows the same explanation.
+ *
+ * • Mastery tracking: each item has a 2-dot mastery indicator.
+ *   - 0 correct guesses → "New" (empty dots)
+ *   - 1 correct guess   → "Seen once" / in progress (1 amber dot)
+ *   - 2+ correct guesses → "Learned" (2 green dots)
+ *   Category unlock % is based on fully learned items (2+ correct).
+ *
+ * • Alt names: items can have alternative accepted names (e.g., common name +
+ *   Latin name). Both exact and fuzzy matching apply to alt names.
+ *
+ * • Editor mode: create/edit/delete categories, items, and confusion pairs.
+ *   Images can be added by drag-and-drop from PC, file picker, or pasting a URL.
+ *   Dropped/selected files are converted to base64 via FileReader.
+ *
+ * • Import/Export:
+ *   - JSON export/import for editing workflows (images stored as URLs or base64).
+ *   - Standalone HTML export: produces a self-contained quiz-only HTML file with
+ *     all data embedded in a <script type="application/json"> tag. Works offline.
+ *     The exported file includes a minified copy of the quiz runtime (no editor).
+ *
+ * • Persistence: app data (categories, items, confusions) and user progress
+ *   (per-item attempts/correct counts) are saved to localStorage.
+ *
+ * ARCHITECTURE
+ * ────────────
+ * The app is organized into these major sections:
+ *
+ * 1. CSS (in <style>)
+ *    Dark theme with CSS custom properties. Responsive grid layout for category
+ *    cards. Styles for quiz UI, editor forms, modals, mastery dots, stats bar.
+ *
+ * 2. HTML (in <body>)
+ *    Minimal skeleton: header with mode toggle, a single #appContainer div that
+ *    gets re-rendered by JS, and a modal overlay.
+ *
+ * 3. DATA MODEL (JS)
+ *    - appData: the project's content (categories, items, confusions).
+ *    - progress: per-item learning state { attempts, correct }.
+ *    - State variables: currentMode, currentView, currentCategoryId, currentQuiz.
+ *    - editCatState / editConfState: temporary state for editor forms.
+ *
+ * 4. UTILS (JS)
+ *    Pure helper functions: uid generation, Levenshtein distance, string
+ *    normalization, file-to-base64, array shuffle, toast notifications.
+ *    Data accessors: getCatById, getItemById, getCategoryProgress, getItemMastery,
+ *    isCategoryUnlocked, findConfusion, findItemByGuess, findClosestItemByGuess.
+ *
+ * 5. PERSISTENCE (JS)
+ *    saveData() / loadData() — localStorage read/write for appData + progress.
+ *
+ * 6. RENDERING (JS)
+ *    All UI is rendered by replacing #appContainer innerHTML. No framework.
+ *    - render(): top-level router based on currentMode + currentView.
+ *    - renderLearnHome(): category card grid with progress bars.
+ *    - renderQuiz(): image display, input, autocomplete, feedback, mastery dots.
+ *    - renderEditorHome(): editor category list + confusion pairs list.
+ *    - renderEditCategory(): category form with items list.
+ *    - renderEditItem(): item form with image upload/drag-and-drop.
+ *    - renderEditConfusion(): confusion pair form.
+ *
+ * 7. QUIZ LOGIC (JS)
+ *    startQuiz, prepareQuizItem, submitGuess (matching + confusion detection),
+ *    nextQuizItem, image navigation, autocomplete filtering.
+ *
+ * 8. EDITOR LOGIC (JS)
+ *    CRUD operations for categories, items, confusion pairs.
+ *    New items use a staging pattern (_newItem) so canceling doesn't leave ghosts.
+ *
+ * 9. IMPORT/EXPORT (JS)
+ *    JSON export/import, standalone HTML export (getQuizRuntime() returns a
+ *    minified quiz-only JS runtime), blob download helper, reset functions.
+ *
+ * 10. INIT (JS)
+ *     Checks for embedded data (standalone mode), loads from localStorage, renders.
+ *
+ * DATA SHAPES (keep in sync with code!)
+ * ──────────
+ * appData = {
+ *   projectName: string,
+ *   categories: [{
+ *     id: string,
+ *     name: string,
+ *     description: string,
+ *     items: [{
+ *       id: string,
+ *       name: string,
+ *       images: ImageEntry[],          // see ImageEntry below
+ *       altNames: string[]
+ *     }],
+ *     prerequisites: string[],         // array of category IDs
+ *     unlockThreshold: number          // 0-100, default 80
+ *   }],
+ *   confusions: [{
+ *     id: string,
+ *     itemA: { catId: string, itemId: string },
+ *     itemB: { catId: string, itemId: string },
+ *     explanation: string,
+ *     images: ImageEntry[]             // comparison images
+ *   }]
+ * }
+ *
+ * ImageEntry = string                  // legacy: bare URL or base64 data URL
+ *            | { src: string,          // URL or base64 data URL
+ *                caption: string }     // optional label e.g. "male", "juvenile", "forest habitat"
+ *
+ * progress = {
+ *   [itemId: string]: {
+ *     attempts: number,                // total guess count
+ *     correct: number,                 // total correct guesses
+ *     lastReviewedAt: number|null,     // timestamp (ms) of last review
+ *     nextReviewAt: number|null,       // timestamp (ms) when item should next be reviewed
+ *     interval: number,                // current SRS interval in days (starts at 1)
+ *     easeFactor: number,              // SM-2 ease factor (starts at 2.5, min 1.3)
+ *     history: number[]                // recent quality scores (0-5), newest last, max 20 kept
+ *   }
+ * }
+ *
+ * SRS NOTES (for future spaced repetition implementation):
+ * - interval: days until next review. Doubles (approx) on correct, resets on wrong.
+ * - easeFactor: multiplier that adjusts based on answer quality (SM-2 algorithm).
+ *   Updated after each review: EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
+ *   where q is quality 0-5. Currently we record q=5 for correct, q=1 for wrong.
+ * - history: quality scores for the last 20 reviews. Enables streak detection,
+ *   lapse tracking, and alternative scheduling algorithms.
+ * - nextReviewAt: the quiz can use this to prioritize due items in the future.
+ */
+
+// ==================== DATA MODEL ====================
+/** Default empty project structure, deep-copied on reset. */
+const DEFAULT_DATA = {
+  projectName: "My Knowledge Tree",
+  categories: [],
+  confusions: []
+};
+
+// Category shape: { id, name, description, items: [{id, name, images: (string|{src,caption})[], altNames:[]}], prerequisites: [catId], unlockThreshold: 80 }
+// Confusion shape: { id, itemA: {catId, itemId}, itemB: {catId, itemId}, explanation: "", images: (string|{src,caption})[] }
+
+/** Master content data — categories, items, confusions. Persisted to localStorage. */
+let appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+/** Per-item learning progress. Keyed by item ID → { attempts: number, correct: number }. */
+let progress = {};
+/** Current app mode: 'learn' (quiz/browse) or 'editor' (create/edit content). */
+let currentMode = 'learn';
+/** Current view within the mode: 'home', 'quiz', 'editCategory', 'editItem', 'editConfusion'. */
+let currentView = 'home';
+/** ID of the category being quizzed or edited. Null when on home screen. */
+let currentCategoryId = null;
+/** Active quiz session state. Null when not quizzing. See startQuiz() for shape. */
+let currentQuiz = null;
+
+// ==================== UTILS ====================
+
+/** Generates a short unique ID using timestamp + random suffix. Used for all entity IDs. */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+/**
+ * Computes the Levenshtein edit distance between two strings (case-insensitive).
+ * Used to allow fuzzy matching of user guesses against correct answers.
+ * @param {string} a - First string.
+ * @param {string} b - Second string.
+ * @returns {number} The minimum number of single-character edits (insertions, deletions, substitutions).
+ */
+function levenshtein(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase();
+  const m = a.length, n = b.length;
+  const d = Array.from({length: m+1}, () => Array(n+1).fill(0));
+  for (let i = 0; i <= m; i++) d[i][0] = i;
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      d[i][j] = Math.min(
+        d[i-1][j] + 1,
+        d[i][j-1] + 1,
+        d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)
+      );
+  return d[m][n];
+}
+
+/**
+ * Returns the maximum allowed Levenshtein distance for a given item name.
+ * Scales with name length so that longer names allow more typos.
+ * @param {string} name - The correct item name.
+ * @returns {number} Max tolerated edit distance (1, 2, or 3).
+ */
+function maxLevenshteinDist(name) {
+  const len = name.length;
+  if (len <= 4) return 1;
+  if (len <= 8) return 2;
+  return 3;
+}
+
+/** Normalizes a string for comparison: trims, lowercases, collapses whitespace. */
+function normalize(s) { return s.trim().toLowerCase().replace(/\s+/g, ' '); }
+
+/**
+ * Extracts the image source URL from an ImageEntry (handles both legacy string
+ * format and new {src, caption} object format for backward compatibility).
+ * @param {string|Object} img - An image entry.
+ * @returns {string} The image source URL or base64 data URL.
+ */
+function imgSrc(img) { return typeof img === 'string' ? img : img.src; }
+
+/**
+ * Extracts the caption from an ImageEntry. Returns empty string for legacy
+ * string-only entries or entries without a caption.
+ * @param {string|Object} img - An image entry.
+ * @returns {string} The caption text, or ''.
+ */
+function imgCaption(img) { return (typeof img === 'object' && img.caption) ? img.caption : ''; }
+
+/**
+ * Reads a File object and returns a base64 data URL string.
+ * Used when images are dragged/selected from the user's PC in the editor.
+ * @param {File} file - The file to convert.
+ * @returns {Promise<string>} A data URL (e.g., "data:image/png;base64,...").
+ */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Returns a new array with elements in random order (Fisher-Yates shuffle).
+ * Used to randomize quiz item order and image display order within an item.
+ * @param {Array} arr - The source array (not mutated).
+ * @returns {Array} A new shuffled copy.
+ */
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Shows a temporary toast notification at the bottom-right of the screen.
+ * Auto-removes after 3 seconds. Only one toast visible at a time.
+ * @param {string} msg - The message to display.
+ */
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+/** Looks up a category by its ID. Returns undefined if not found. */
+function getCatById(id) { return appData.categories.find(c => c.id === id); }
+
+/** Looks up an item within a specific category. Returns undefined if not found. */
+function getItemById(catId, itemId) {
+  const cat = getCatById(catId);
+  return cat ? cat.items.find(i => i.id === itemId) : null;
+}
+
+/**
+ * Computes learning progress for a category based on per-item mastery.
+ * - "in progress" = exactly 1 correct guess.
+ * - "learned" = 2 or more correct guesses.
+ * - pct = percentage of learned items (used for unlock threshold checks).
+ * @param {Object} cat - A category object.
+ * @returns {{ pct: number, inProgress: number, learned: number, total: number }}
+ */
+function getCategoryProgress(cat) {
+  if (!cat.items.length) return { pct: 0, inProgress: 0, learned: 0, total: cat.items.length };
+  let inProgress = 0, learned = 0;
+  cat.items.forEach(item => {
+    const p = progress[item.id];
+    if (p && p.correct >= 2) learned++;
+    else if (p && p.correct === 1) inProgress++;
+  });
+  return { pct: Math.round((learned / cat.items.length) * 100), inProgress, learned, total: cat.items.length };
+}
+
+/**
+ * Returns the mastery level for a single item: 0 (new), 1 (seen once), or 2 (learned).
+ * Used to render the mastery dot indicators in the quiz UI.
+ * @param {string} itemId - The item's unique ID.
+ * @returns {number} 0, 1, or 2.
+ */
+function getItemMastery(itemId) {
+  const p = progress[itemId];
+  if (!p) return 0;
+  return Math.min(p.correct, 2);
+}
+
+/**
+ * Checks whether a category is unlocked. A category is unlocked if ALL of its
+ * prerequisite categories have reached their respective unlock thresholds.
+ * Categories with no prerequisites are always unlocked.
+ * @param {Object} cat - A category object.
+ * @returns {boolean}
+ */
+function isCategoryUnlocked(cat) {
+  if (!cat.prerequisites || cat.prerequisites.length === 0) return true;
+  return cat.prerequisites.every(preId => {
+    const preCat = getCatById(preId);
+    if (!preCat) return true;
+    const prog = getCategoryProgress(preCat);
+    return prog.pct >= (preCat.unlockThreshold || 80);
+  });
+}
+
+/**
+ * Finds a confusion pair between two items (bidirectional lookup).
+ * @param {string} guessedItemId - The item the user (probably) meant.
+ * @param {string} correctItemId - The item that was actually shown.
+ * @returns {Object|undefined} The confusion object, or undefined if none defined.
+ */
+function findConfusion(guessedItemId, correctItemId) {
+  return appData.confusions.find(c =>
+    (c.itemA.itemId === guessedItemId && c.itemB.itemId === correctItemId) ||
+    (c.itemA.itemId === correctItemId && c.itemB.itemId === guessedItemId)
+  );
+}
+
+/**
+ * Attempts to find which item the user was trying to name within a set of items.
+ * First tries exact match (name + altNames), then picks the closest by Levenshtein.
+ * Does NOT apply the distance threshold — always returns the closest match.
+ * @param {string} guess - The user's raw input.
+ * @param {Array} categoryItems - Items to search within.
+ * @returns {Object|null} The best-matching item object.
+ */
+function findItemByGuess(guess, categoryItems) {
+  const g = normalize(guess);
+  for (const item of categoryItems) {
+    if (normalize(item.name) === g) return item;
+    if (item.altNames) {
+      for (const alt of item.altNames) {
+        if (normalize(alt) === g) return item;
+      }
+    }
+  }
+  // fuzzy match
+  let best = null, bestDist = Infinity;
+  for (const item of categoryItems) {
+    const dist = levenshtein(g, normalize(item.name));
+    if (dist < bestDist) { bestDist = dist; best = item; }
+    if (item.altNames) {
+      for (const alt of item.altNames) {
+        const d = levenshtein(g, normalize(alt));
+        if (d < bestDist) { bestDist = d; best = item; }
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * Like findItemByGuess, but searches ALL items across ALL categories and
+ * only returns a match if it's within the Levenshtein distance threshold.
+ * Used to identify what the user likely meant when they guessed wrong, so
+ * we can check for a relevant confusion pair.
+ * @param {string} guess - The user's raw input.
+ * @param {Array} allItems - All items across all categories.
+ * @returns {Object|null} The matched item, or null if nothing is close enough.
+ */
+function findClosestItemByGuess(guess, allItems) {
+  const g = normalize(guess);
+  let best = null, bestDist = Infinity;
+  for (const item of allItems) {
+    const dist = levenshtein(g, normalize(item.name));
+    if (dist < bestDist) { bestDist = dist; best = item; }
+    if (item.altNames) {
+      for (const alt of item.altNames) {
+        const d = levenshtein(g, normalize(alt));
+        if (d < bestDist) { bestDist = d; best = item; }
+      }
+    }
+  }
+  if (bestDist <= maxLevenshteinDist(best?.name || guess)) return best;
+  return null;
+}
+
+// ==================== PERSISTENCE ====================
+
+/** Writes appData and progress to localStorage. Called after any data mutation. */
+function saveData() {
+  try {
+    localStorage.setItem('kt_data', JSON.stringify(appData));
+    localStorage.setItem('kt_progress', JSON.stringify(progress));
+  } catch(e) { console.warn('Save failed', e); }
+}
+
+/** Restores appData and progress from localStorage. Called once at init. */
+function loadData() {
+  try {
+    const d = localStorage.getItem('kt_data');
+    const p = localStorage.getItem('kt_progress');
+    if (d) appData = JSON.parse(d);
+    if (p) progress = JSON.parse(p);
+  } catch(e) { console.warn('Load failed', e); }
+}
+
+// ==================== RENDERING ====================
+// All views are rendered by replacing the innerHTML of #appContainer.
+// This is a simple "re-render everything" approach — no virtual DOM or diffing.
+const container = document.getElementById('appContainer');
+
+/**
+ * Top-level render router. Decides which view to render based on
+ * currentMode ('learn'|'editor') and currentView ('home'|'quiz'|'editCategory'|etc).
+ */
+function render() {
+  if (currentMode === 'learn') {
+    if (currentView === 'quiz' && currentCategoryId) renderQuiz();
+    else renderLearnHome();
+  } else {
+    if (currentView === 'editCategory') renderEditCategory();
+    else if (currentView === 'editItem') renderEditItem();
+    else if (currentView === 'editConfusion') renderEditConfusion();
+    else renderEditorHome();
+  }
+}
+
+// ==================== LEARN HOME ====================
+
+/**
+ * Renders the learn mode home screen: a grid of category cards split into
+ * "Available" (unlocked) and "Locked" sections. Each card shows name,
+ * description, progress bar, and stats (learned / in progress / total).
+ */
+function renderLearnHome() {
+  currentView = 'home';
+  const unlocked = appData.categories.filter(c => isCategoryUnlocked(c));
+  const locked = appData.categories.filter(c => !isCategoryUnlocked(c));
+
+  let html = '';
+  if (appData.categories.length === 0) {
+    html = `<div class="empty-state">
+      <div class="empty-icon">🌱</div>
+      <p>No categories yet. Switch to Editor mode to create your knowledge tree!</p>
+      <button class="btn btn-primary" onclick="switchMode('editor')">Open Editor</button>
+    </div>`;
+  } else {
+    if (unlocked.length) {
+      html += `<div class="section-header"><h2 class="section-title">Available</h2></div>`;
+      html += `<div class="categories-grid">`;
+      unlocked.forEach(cat => {
+        const prog = getCategoryProgress(cat);
+        const isCompleted = prog.pct >= (cat.unlockThreshold || 80);
+        html += `<div class="category-card ${isCompleted ? 'completed' : ''}" onclick="startQuiz('${cat.id}')">
+          <div class="category-header">
+            <div class="category-name">${esc(cat.name)}</div>
+            ${isCompleted ? '<span class="category-badge btn-success">✓ Mastered</span>' : `<span class="category-badge" style="background:var(--accent-bg);color:var(--accent2);">${cat.items.length} items</span>`}
+          </div>
+          ${cat.description ? `<div class="category-desc">${esc(cat.description)}</div>` : ''}
+          <div class="category-progress"><div class="category-progress-fill" style="width:${prog.pct}%"></div></div>
+          <div class="category-stats">
+            <span>${prog.learned} learned · ${prog.inProgress} in progress · ${prog.total} total</span>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    if (locked.length) {
+      html += `<div class="section-header" style="margin-top:40px"><h2 class="section-title">Locked</h2></div>`;
+      html += `<div class="categories-grid">`;
+      locked.forEach(cat => {
+        const prereqNames = (cat.prerequisites || []).map(pid => getCatById(pid)?.name || '?').join(', ');
+        html += `<div class="category-card locked">
+          <div class="lock-overlay">🔒</div>
+          <div class="category-header">
+            <div class="category-name">${esc(cat.name)}</div>
+            <span class="category-badge" style="background:var(--bg4);color:var(--text3);">${cat.items.length} items</span>
+          </div>
+          ${cat.description ? `<div class="category-desc">${esc(cat.description)}</div>` : ''}
+          <div class="category-stats"><span>Requires: ${esc(prereqNames)}</span></div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+  container.innerHTML = html;
+}
+
+// ==================== QUIZ ====================
+
+/**
+ * Initializes a quiz session for a given category. Shows an intro popup with
+ * category info and what will be unlocked, then starts the quiz on user click.
+ * @param {string} catId - The category ID to quiz on.
+ */
+function startQuiz(catId) {
+  const cat = getCatById(catId);
+  if (!cat || !isCategoryUnlocked(cat)) return;
+  if (cat.items.length === 0) { showToast('No items in this category yet.'); return; }
+
+  // Find which categories this one can help unlock
+  const canUnlock = appData.categories.filter(c =>
+    c.id !== catId && (c.prerequisites || []).includes(catId) && !isCategoryUnlocked(c)
+  );
+
+  const prog = getCategoryProgress(cat);
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">${esc(cat.name)}</div>
+      <button class="btn-icon" onclick="closeModal()">×</button>
+    </div>
+    ${cat.description ? `<p style="color:var(--text2);font-size:0.9rem;line-height:1.6;margin-bottom:16px">${esc(cat.description)}</p>` : ''}
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+      <div class="popup-stat-card">
+        <div class="popup-stat-value">${cat.items.length}</div>
+        <div class="popup-stat-label">Items</div>
+      </div>
+      <div class="popup-stat-card">
+        <div class="popup-stat-value">${prog.learned}</div>
+        <div class="popup-stat-label">Learned</div>
+      </div>
+      <div class="popup-stat-card">
+        <div class="popup-stat-value">${prog.inProgress}</div>
+        <div class="popup-stat-label">In progress</div>
+      </div>
+      <div class="popup-stat-card">
+        <div class="popup-stat-value">${cat.unlockThreshold || 80}%</div>
+        <div class="popup-stat-label">To master</div>
+      </div>
+    </div>
+    ${canUnlock.length > 0 ? `
+      <div style="padding:12px 16px;background:var(--accent-bg);border-radius:var(--radius);margin-bottom:16px">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--accent2);margin-bottom:6px">🔓 Mastering this unlocks:</div>
+        <div style="font-size:0.88rem;color:var(--text2)">${canUnlock.map(c => esc(c.name)).join(', ')}</div>
+      </div>` : ''}
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="closeModal();beginQuiz('${catId}')">Start Learning →</button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+/**
+ * Actually begins the quiz session after the intro popup is dismissed.
+ * Separated from startQuiz so the popup can call this on button click.
+ * @param {string} catId - The category ID.
+ */
+function beginQuiz(catId) {
+  const cat = getCatById(catId);
+  if (!cat) return;
+  currentCategoryId = catId;
+  currentView = 'quiz';
+
+  // Snapshot currently unlocked category IDs so we can detect newly unlocked ones
+  const unlockedBefore = new Set(appData.categories.filter(c => isCategoryUnlocked(c)).map(c => c.id));
+
+  const items = shuffleArray(cat.items);
+  currentQuiz = {
+    catId,
+    items,
+    currentIndex: 0,
+    imageIndex: 0,
+    shuffledImages: [],
+    sessionCorrect: 0,
+    sessionTotal: 0,
+    answered: false,
+    autocomplete: true,
+    unlockedBefore
+  };
+  prepareQuizItem();
+  render();
+}
+
+/**
+ * Prepares the current quiz item for display: resets image index,
+ * shuffles the item's images into a random order, clears answered state.
+ */
+function prepareQuizItem() {
+  if (!currentQuiz) return;
+  const item = currentQuiz.items[currentQuiz.currentIndex];
+  currentQuiz.imageIndex = 0;
+  currentQuiz.shuffledImages = item.images.length > 0 ? shuffleArray(item.images) : [];
+  currentQuiz.answered = false;
+}
+
+/**
+ * Renders the quiz UI: stats bar (in progress / learned / remaining / attempts),
+ * item mastery dots, image display with prev/next navigation, text input with
+ * optional autocomplete, submit/next buttons, and feedback area.
+ */
+function renderQuiz() {
+  const q = currentQuiz;
+  const cat = getCatById(q.catId);
+  const item = q.items[q.currentIndex];
+  const images = q.shuffledImages;
+  const img = images.length > 0 ? images[q.imageIndex] : null;
+  const prog = getCategoryProgress(cat);
+  const mastery = getItemMastery(item.id);
+  const itemProg = progress[item.id];
+
+  function dot(filled) {
+    return `<span class="mastery-dot ${filled ? 'filled' : ''}"></span>`;
+  }
+
+  let html = `<div class="quiz-container">
+    <button class="back-link" onclick="goHome()">← Back to categories</button>
+    <div class="quiz-header">
+      <h2 class="section-title">${esc(cat.name)}</h2>
+    </div>
+    <div class="quiz-stats-bar">
+      <div class="quiz-stat"><span class="stat-dot" style="background:var(--amber)"></span> In progress: <strong>${prog.inProgress}</strong></div>
+      <div class="quiz-stat"><span class="stat-dot" style="background:var(--green)"></span> Learned: <strong>${prog.learned}</strong></div>
+      <div class="quiz-stat"><span class="stat-dot" style="background:var(--text3)"></span> Remaining: <strong>${prog.total - prog.learned - prog.inProgress}</strong></div>
+    </div>
+    <div class="quiz-item-status">
+      Item ${q.currentIndex + 1}/${q.items.length}
+      <span style="margin-left:8px">Mastery:</span>
+      <span class="mastery-dots">${dot(mastery >= 1)}${dot(mastery >= 2)}</span>
+      <span style="font-size:0.78rem;color:var(--text3)">${mastery === 0 ? 'New' : mastery === 1 ? 'Seen once' : 'Learned'}</span>
+    </div>
+    <div class="quiz-image-area" id="quizImageArea">
+      ${img ? `<img src="${esc(imgSrc(img))}" alt="Identify this">` : '<div style="color:var(--text3);font-size:0.9rem;">No image available</div>'}
+      ${images.length > 1 ? `
+        <div class="quiz-image-counter">${q.imageIndex + 1} / ${images.length}</div>
+        <div class="quiz-image-nav">
+          <button onclick="quizPrevImage()">‹</button>
+          <button onclick="quizNextImage()">›</button>
+        </div>` : ''}
+    </div>
+    ${img && imgCaption(img) ? `<div class="quiz-image-caption">${esc(imgCaption(img))}</div>` : ''}
+    <div class="quiz-input-area">
+      <input type="text" id="quizInput" placeholder="What is this?" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" name="quiz-answer-nofill"
+        ${q.answered ? 'disabled' : ''}
+        onkeydown="if(event.key==='Enter')submitGuess()"
+        oninput="onQuizInput(event)">
+      <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+    </div>
+    <div class="quiz-controls">
+      <button class="btn btn-primary" onclick="submitGuess()" ${q.answered ? 'disabled' : ''}>Submit</button>
+      ${q.answered ? `<button class="btn btn-ghost" onclick="nextQuizItem()">Next →</button>` : ''}
+      <div style="flex:1"></div>
+      <label class="autocomplete-toggle">
+        <input type="checkbox" ${q.autocomplete ? 'checked' : ''} onchange="toggleAutocomplete(this.checked)">
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        Autocomplete
+      </label>
+    </div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+  </div>`;
+  container.innerHTML = html;
+
+  if (!q.answered) {
+    setTimeout(() => document.getElementById('quizInput')?.focus(), 50);
+  }
+}
+
+/** Advances to the next image for the current quiz item (wraps around). Updates in-place without full re-render. */
+function quizNextImage() {
+  if (!currentQuiz) return;
+  currentQuiz.imageIndex = (currentQuiz.imageIndex + 1) % currentQuiz.shuffledImages.length;
+  updateQuizImage();
+}
+
+/** Goes to the previous image for the current quiz item (wraps around). Updates in-place without full re-render. */
+function quizPrevImage() {
+  if (!currentQuiz) return;
+  const len = currentQuiz.shuffledImages.length;
+  currentQuiz.imageIndex = (currentQuiz.imageIndex - 1 + len) % len;
+  updateQuizImage();
+}
+
+/**
+ * Updates just the image, caption, and counter inside the quiz image area
+ * without replacing the entire quiz container. Preserves scroll position,
+ * input value, and focus state.
+ */
+function updateQuizImage() {
+  const q = currentQuiz;
+  if (!q) return;
+  const images = q.shuffledImages;
+  const img = images.length > 0 ? images[q.imageIndex] : null;
+  const area = document.getElementById('quizImageArea');
+  if (!area) return;
+
+  // Update image
+  const imgEl = area.querySelector('img');
+  if (imgEl && img) {
+    imgEl.src = imgSrc(img);
+  }
+
+  // Update caption (now rendered as sibling after quiz-image-area)
+  let captionEl = area.nextElementSibling;
+  if (captionEl && !captionEl.classList.contains('quiz-image-caption')) captionEl = null;
+  const caption = img ? imgCaption(img) : '';
+  if (caption) {
+    if (!captionEl) {
+      captionEl = document.createElement('div');
+      captionEl.className = 'quiz-image-caption';
+      area.insertAdjacentElement('afterend', captionEl);
+    }
+    captionEl.textContent = caption;
+  } else if (captionEl) {
+    captionEl.remove();
+  }
+
+  // Update counter
+  const counterEl = area.querySelector('.quiz-image-counter');
+  if (counterEl) {
+    counterEl.textContent = (q.imageIndex + 1) + ' / ' + images.length;
+  }
+}
+
+/** Toggles the autocomplete dropdown on/off for the current quiz session. */
+function toggleAutocomplete(on) {
+  if (currentQuiz) currentQuiz.autocomplete = on;
+}
+
+/**
+ * Handles input events on the quiz text field. If autocomplete is enabled,
+ * filters item names from ALL categories (not just the current one) by
+ * substring match and shows a deduplicated dropdown. This way the user can't
+ * narrow down answers by elimination from the autocomplete list.
+ * Hides the dropdown when input is empty or only one exact match remains.
+ */
+function onQuizInput(e) {
+  const q = currentQuiz;
+  if (!q || !q.autocomplete || q.answered) {
+    document.getElementById('autocompleteDropdown')?.classList.remove('show');
+    return;
+  }
+  const val = normalize(e.target.value);
+  const dropdown = document.getElementById('autocompleteDropdown');
+  if (!val) { dropdown.classList.remove('show'); return; }
+
+  // Search across ALL categories, not just the current one
+  const allNames = [];
+  appData.categories.forEach(cat => {
+    cat.items.forEach(item => {
+      allNames.push({ name: item.name, id: item.id });
+      (item.altNames || []).forEach(alt => allNames.push({ name: alt, id: item.id }));
+    });
+  });
+
+  const matches = allNames.filter(n => normalize(n.name).includes(val));
+  // Deduplicate by name
+  const seen = new Set();
+  const unique = matches.filter(m => { const k = normalize(m.name); if (seen.has(k)) return false; seen.add(k); return true; });
+
+  if (unique.length === 0 || (unique.length === 1 && normalize(unique[0].name) === val)) {
+    dropdown.classList.remove('show');
+    return;
+  }
+
+  dropdown.innerHTML = unique.slice(0, 8).map((m, i) =>
+    `<div class="autocomplete-item" onmousedown="selectAutocomplete('${esc(m.name)}')">${esc(m.name)}</div>`
+  ).join('');
+  dropdown.classList.add('show');
+}
+
+/** Called when user clicks an autocomplete suggestion. Fills the input and hides dropdown. */
+function selectAutocomplete(name) {
+  const input = document.getElementById('quizInput');
+  if (input) { input.value = name; }
+  document.getElementById('autocompleteDropdown')?.classList.remove('show');
+}
+
+/**
+ * Core quiz logic: evaluates the user's guess against the correct item.
+ *
+ * Matching strategy (in order):
+ * 1. Exact match against item name (normalized).
+ * 2. Exact match against any altName.
+ * 3. Levenshtein fuzzy match against name (within threshold from maxLevenshteinDist).
+ * 4. Levenshtein fuzzy match against altNames.
+ *
+ * On wrong answer: searches all items across all categories for what the user
+ * likely meant (findClosestItemByGuess), then checks if a confusion pair exists
+ * between that item and the correct one. If so, shows the authored explanation.
+ *
+ * Updates progress (attempts/correct), session counters, and re-renders feedback.
+ */
+function submitGuess() {
+  const q = currentQuiz;
+  if (!q || q.answered) return;
+  const input = document.getElementById('quizInput');
+  const guess = input?.value?.trim();
+  if (!guess) return;
+
+  q.answered = true;
+  q.sessionTotal++;
+
+  const cat = getCatById(q.catId);
+  const correctItem = q.items[q.currentIndex];
+  const guessNorm = normalize(guess);
+  const correctNorm = normalize(correctItem.name);
+
+  // Check exact match or alt names
+  let isCorrect = guessNorm === correctNorm;
+  if (!isCorrect && correctItem.altNames) {
+    isCorrect = correctItem.altNames.some(a => normalize(a) === guessNorm);
+  }
+
+  // Check Levenshtein distance
+  if (!isCorrect) {
+    const dist = levenshtein(guessNorm, correctNorm);
+    if (dist <= maxLevenshteinDist(correctItem.name)) isCorrect = true;
+    if (!isCorrect && correctItem.altNames) {
+      isCorrect = correctItem.altNames.some(a => levenshtein(guessNorm, normalize(a)) <= maxLevenshteinDist(a));
+    }
+  }
+
+  // Update progress with SRS metadata
+  if (!progress[correctItem.id]) {
+    progress[correctItem.id] = {
+      attempts: 0, correct: 0,
+      lastReviewedAt: null, nextReviewAt: null,
+      interval: 1, easeFactor: 2.5, history: []
+    };
+  }
+  const prog = progress[correctItem.id];
+  // Backfill SRS fields for legacy progress entries
+  if (prog.interval === undefined) prog.interval = 1;
+  if (prog.easeFactor === undefined) prog.easeFactor = 2.5;
+  if (!prog.history) prog.history = [];
+
+  prog.attempts++;
+  prog.lastReviewedAt = Date.now();
+
+  const feedback = document.getElementById('quizFeedback');
+  input.classList.remove('correct', 'wrong');
+
+  if (isCorrect) {
+    q.sessionCorrect++;
+    prog.correct++;
+    // SRS: quality 5 (perfect recall) — update interval and ease factor
+    const q5 = 5;
+    prog.history.push(q5);
+    if (prog.history.length > 20) prog.history.shift();
+    prog.easeFactor = Math.max(1.3, prog.easeFactor + (0.1 - (5 - q5) * (0.08 + (5 - q5) * 0.02)));
+    prog.interval = prog.correct === 1 ? 1 : prog.correct === 2 ? 3 : Math.round(prog.interval * prog.easeFactor);
+    prog.nextReviewAt = Date.now() + prog.interval * 86400000;
+    input.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.innerHTML = `<div class="feedback-title">✓ Correct!</div><div class="feedback-text">That's <strong>${esc(correctItem.name)}</strong>.</div>`;
+  } else {
+    // SRS: quality 1 (wrong) — reset interval, lower ease factor
+    const q1 = 1;
+    prog.history.push(q1);
+    if (prog.history.length > 20) prog.history.shift();
+    prog.easeFactor = Math.max(1.3, prog.easeFactor + (0.1 - (5 - q1) * (0.08 + (5 - q1) * 0.02)));
+    prog.interval = 1;
+    prog.nextReviewAt = Date.now() + 86400000;
+    input.classList.add('wrong');
+
+    // Try to find what user meant for confusion matching
+    const allItems = appData.categories.flatMap(c => c.items);
+    const guessedItem = findClosestItemByGuess(guess, allItems);
+    const confusion = guessedItem ? findConfusion(guessedItem.id, correctItem.id) : null;
+
+    if (confusion) {
+      feedback.className = 'quiz-feedback show confusion';
+      let confHtml = `<div class="feedback-title">⚠ Common confusion!</div>
+        <div class="feedback-text">You guessed <strong>${esc(guessedItem.name)}</strong>, but this is <strong>${esc(correctItem.name)}</strong>.<br><br>${esc(confusion.explanation)}</div>`;
+      if (confusion.images && confusion.images.length > 0) {
+        confHtml += `<div class="confusion-images">${confusion.images.map(img => `<img src="${esc(imgSrc(img))}">`).join('')}</div>`;
+      }
+      feedback.innerHTML = confHtml;
+    } else {
+      feedback.className = 'quiz-feedback show wrong';
+      feedback.innerHTML = `<div class="feedback-title">✗ Not quite</div><div class="feedback-text">The correct answer is <strong>${esc(correctItem.name)}</strong>.</div>`;
+    }
+  }
+
+  input.disabled = true;
+  saveData();
+
+  // Check for mastery celebration and newly unlocked categories
+  if (isCorrect) {
+    const catProg = getCategoryProgress(getCatById(q.catId));
+    const newlyUnlocked = findNewlyUnlockedCategories(q.catId);
+    // Update snapshot so popups don't retrigger for same unlocks within session
+    if (newlyUnlocked.length > 0) {
+      newlyUnlocked.forEach(c => q.unlockedBefore.add(c.id));
+    }
+    // Filter out already-celebrated unlocks (persisted across sessions)
+    if (!progress._celebrations) progress._celebrations = { mastered: [], unlocked: [] };
+    const unseenUnlocks = newlyUnlocked.filter(c => !progress._celebrations.unlocked.includes(c.id));
+
+    if (catProg.pct >= 100 && !progress._celebrations.mastered.includes(q.catId)) {
+      progress._celebrations.mastered.push(q.catId);
+      unseenUnlocks.forEach(c => progress._celebrations.unlocked.push(c.id));
+      saveData();
+      setTimeout(() => showMasteryPopup(q.catId, unseenUnlocks), 600);
+    } else if (unseenUnlocks.length > 0) {
+      unseenUnlocks.forEach(c => progress._celebrations.unlocked.push(c.id));
+      saveData();
+      setTimeout(() => showUnlockPopup(unseenUnlocks), 600);
+    }
+  }
+
+  // Re-render controls (show Next button) without wiping feedback
+  const controls = document.querySelector('.quiz-controls');
+  if (controls) {
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-ghost';
+    nextBtn.textContent = 'Next →';
+    nextBtn.onclick = nextQuizItem;
+    controls.insertBefore(nextBtn, controls.querySelector('[style]'));
+    controls.querySelector('.btn-primary').disabled = true;
+  }
+}
+
+/**
+ * Advances to the next quiz item. When all items have been shown,
+ * reshuffles the list and starts over (infinite practice loop).
+ */
+function nextQuizItem() {
+  const q = currentQuiz;
+  if (!q) return;
+  q.currentIndex++;
+  if (q.currentIndex >= q.items.length) {
+    // Reshuffle and restart
+    q.items = shuffleArray(q.items);
+    q.currentIndex = 0;
+  }
+  prepareQuizItem();
+  renderQuiz();
+}
+
+/**
+ * Finds categories that are now unlocked but weren't before this quiz session.
+ * Compares against the unlockedBefore snapshot taken at quiz start.
+ * @param {string} catId - The category that just had progress.
+ * @returns {Object[]} Array of newly unlocked category objects.
+ */
+function findNewlyUnlockedCategories(catId) {
+  const before = currentQuiz?.unlockedBefore || new Set();
+  return appData.categories.filter(c =>
+    c.id !== catId &&
+    !before.has(c.id) &&
+    isCategoryUnlocked(c)
+  );
+}
+
+/**
+ * Shows a celebration popup when a category reaches 100% mastery.
+ * Includes confetti animation and lists any newly unlocked categories.
+ * @param {string} catId - The mastered category ID.
+ * @param {Object[]} newlyUnlocked - Categories unlocked by this mastery.
+ */
+function showMasteryPopup(catId, newlyUnlocked) {
+  const cat = getCatById(catId);
+  if (!cat) return;
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <div class="mastery-popup">
+      <div class="mastery-confetti" id="confettiContainer"></div>
+      <div class="mastery-icon">🏆</div>
+      <h2 class="mastery-title">Category Mastered!</h2>
+      <p class="mastery-subtitle">You've learned every item in <strong>${esc(cat.name)}</strong>!</p>
+      <div style="display:flex;gap:16px;justify-content:center;margin:20px 0">
+        <div class="popup-stat-card">
+          <div class="popup-stat-value">${cat.items.length}</div>
+          <div class="popup-stat-label">Items mastered</div>
+        </div>
+      </div>
+      ${newlyUnlocked.length > 0 ? `
+        <div class="unlock-announcement">
+          <div class="unlock-announcement-title">🔓 New categories unlocked!</div>
+          <div class="unlock-announcement-list">
+            ${newlyUnlocked.map(c => `<div class="unlock-announcement-item"><span class="unlock-announcement-icon">🌿</span>${esc(c.name)}</div>`).join('')}
+          </div>
+        </div>` : ''}
+      <div class="modal-actions" style="justify-content:center">
+        <button class="btn btn-ghost" onclick="closeModal()">Keep practicing</button>
+        <button class="btn btn-primary" onclick="closeModal();goHome()">Back to categories</button>
+      </div>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+  spawnConfetti();
+}
+
+/**
+ * Shows a smaller popup when new categories are unlocked (but mastery isn't 100% yet).
+ * This happens when the unlock threshold is reached.
+ * @param {Object[]} newlyUnlocked - Categories that just became available.
+ */
+function showUnlockPopup(newlyUnlocked) {
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <div class="mastery-popup" style="padding:24px">
+      <div class="mastery-icon" style="font-size:2.5rem">🔓</div>
+      <h2 class="mastery-title" style="font-size:1.3rem">New Categories Unlocked!</h2>
+      <div class="unlock-announcement" style="margin-top:16px">
+        <div class="unlock-announcement-list">
+          ${newlyUnlocked.map(c => `<div class="unlock-announcement-item"><span class="unlock-announcement-icon">🌿</span>${esc(c.name)}${c.description ? `<div style="font-size:0.78rem;color:var(--text3);margin-top:2px">${esc(c.description)}</div>` : ''}</div>`).join('')}
+        </div>
+      </div>
+      <div class="modal-actions" style="justify-content:center;margin-top:16px">
+        <button class="btn btn-ghost" onclick="closeModal()">Keep going</button>
+        <button class="btn btn-primary" onclick="closeModal();goHome()">View categories</button>
+      </div>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+/**
+ * Creates animated confetti particles inside the mastery popup.
+ * Uses lightweight CSS-animated divs — no canvas or library needed.
+ */
+function spawnConfetti() {
+  const container = document.getElementById('confettiContainer');
+  if (!container) return;
+  const colors = ['#7c6ff7', '#4ade80', '#fbbf24', '#f87171', '#38bdf8', '#a78bfa', '#fb923c'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.8 + 's';
+    piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    const size = 4 + Math.random() * 6;
+    piece.style.width = size + 'px';
+    piece.style.height = size * (0.5 + Math.random()) + 'px';
+    piece.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+    container.appendChild(piece);
+  }
+}
+
+/** Exits the quiz and returns to the category selection home screen. */
+function goHome() {
+  currentView = 'home';
+  currentCategoryId = null;
+  currentQuiz = null;
+  render();
+}
+
+// ==================== EDITOR HOME ====================
+
+/**
+ * Renders the editor home screen: a grid of category cards (clickable to edit)
+ * with a "New Category" button, and below it a list of confusion pairs.
+ */
+function renderEditorHome() {
+  currentView = 'home';
+  let html = `<div class="section-header"><h2 class="section-title">Categories</h2>
+    <button class="btn btn-primary" onclick="editCategory()">+ New Category</button></div>`;
+
+  if (appData.categories.length === 0) {
+    html += `<div class="empty-state"><div class="empty-icon">📦</div><p>No categories yet. Create your first one!</p></div>`;
+  } else {
+    html += `<div class="categories-grid">`;
+    appData.categories.forEach(cat => {
+      html += `<div class="category-card" onclick="editCategory('${cat.id}')">
+        <div class="category-header">
+          <div class="category-name">${esc(cat.name)}</div>
+          <span class="category-badge" style="background:var(--accent-bg);color:var(--accent2);">${cat.items.length} items</span>
+        </div>
+        ${cat.description ? `<div class="category-desc">${esc(cat.description)}</div>` : ''}
+        <div class="category-stats">
+          <span>Unlock: ${cat.unlockThreshold || 80}%</span>
+          <span>Prereqs: ${(cat.prerequisites||[]).length ? (cat.prerequisites||[]).map(p => getCatById(p)?.name || '?').join(', ') : 'None'}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Confusions
+  html += `<div class="section-header" style="margin-top:40px"><h2 class="section-title">Confusion Pairs</h2>
+    <button class="btn btn-primary" onclick="editConfusion()">+ New Confusion</button></div>`;
+
+  if (appData.confusions.length === 0) {
+    html += `<div class="empty-state" style="padding:30px"><p style="font-size:0.88rem">No confusion pairs yet. Add them to help learners distinguish similar items.</p></div>`;
+  } else {
+    html += `<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">`;
+    appData.confusions.forEach(c => {
+      const itemA = getItemById(c.itemA.catId, c.itemA.itemId);
+      const itemB = getItemById(c.itemB.catId, c.itemB.itemId);
+      html += `<div class="confusion-row" style="cursor:pointer" onclick="editConfusion('${c.id}')">
+        <div class="confusion-items"><span>${esc(itemA?.name || '?')}</span> ↔ <span>${esc(itemB?.name || '?')}</span></div>
+        <div style="font-size:0.78rem;color:var(--text3);max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.explanation || 'No explanation')}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ==================== GBIF SPECIES LIST ====================
+
+/**
+ * Preconfigured species list definitions. Each entry maps a display label to a
+ * GBIF higher taxon key. Currently only Birds (Aves, key 212).
+ * To add more, append entries here — the rest is automatic.
+ */
+const GBIF_PRESETS = [
+  { label: 'Birds (Aves)', key: 212 }
+];
+
+/** In-memory cache of loaded GBIF species lists. Keyed by GBIF taxon key. */
+let gbifSpeciesCache = {};
+
+/** Current download state for progress UI. Null when not downloading. */
+let gbifDownloadState = null;
+
+// ---- IndexedDB helpers ----
+
+/**
+ * Opens (or creates) the IndexedDB database for caching GBIF species data.
+ * @returns {Promise<IDBDatabase>}
+ */
+function openGbifDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('KnowledgeTree_GBIF', 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore('species'); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Reads a cached species list from IndexedDB.
+ * @param {number} taxonKey - The GBIF higher taxon key (e.g. 212 for Aves).
+ * @returns {Promise<Object|null>} Cached entry { key, timestamp, species[] } or null.
+ */
+async function getGbifCache(taxonKey) {
+  const db = await openGbifDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('species', 'readonly');
+    const req = tx.objectStore('species').get(taxonKey);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Writes a species list to IndexedDB cache.
+ * @param {number} taxonKey - The GBIF higher taxon key.
+ * @param {Array} speciesList - Array of { gbifKey, scientific, namePl, nameEn }.
+ */
+async function setGbifCache(taxonKey, speciesList) {
+  const db = await openGbifDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('species', 'readwrite');
+    tx.objectStore('species').put({ key: taxonKey, timestamp: Date.now(), species: speciesList }, taxonKey);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ---- GBIF API fetching ----
+
+const GBIF_BACKBONE_KEY = 'd7dddbf4-2cf0-4f39-9b2a-bb099caae36c';
+
+/**
+ * Fetches all SPECIES-rank accepted taxa under a higher taxon from GBIF backbone.
+ * Paginates through the /species/search endpoint (300 per page to reduce load).
+ * Implements exponential backoff with retry on HTTP 429 (rate limit) errors.
+ * Extracts scientific name, Polish vernacular, English vernacular, and GBIF key.
+ * Updates gbifDownloadState for progress bar rendering.
+ *
+ * @param {number} taxonKey - GBIF higher taxon key (e.g. 212 for Aves).
+ * @returns {Promise<Array>} Array of { gbifKey, scientific, namePl, nameEn }.
+ */
+async function fetchGbifSpecies(taxonKey) {
+  const PAGE_SIZE = 300;
+  const BASE_DELAY = 1500;    // 1.5s between requests
+  const MAX_RETRIES = 5;
+  let offset = 0;
+  let total = null;
+  let allSpecies = [];
+
+  gbifDownloadState = { taxonKey, loaded: 0, total: null, status: 'fetching', error: null, retrying: false, log: [] };
+  renderEditCategory();
+
+  function logEntry(msg) {
+    const ts = new Date().toISOString();
+    gbifDownloadState.log.push(`[${ts}] ${msg}`);
+  }
+
+  logEntry(`Starting download for taxonKey=${taxonKey}, pageSize=${PAGE_SIZE}`);
+
+  while (true) {
+    const url = `https://api.gbif.org/v1/species/search?datasetKey=${GBIF_BACKBONE_KEY}&rank=SPECIES&highertaxon_key=${taxonKey}&status=ACCEPTED&limit=${PAGE_SIZE}&offset=${offset}`;
+    let data;
+    let success = false;
+
+    logEntry(`Fetching offset=${offset}`);
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const resp = await fetch(url);
+        const hdrs = {};
+        resp.headers.forEach((v, k) => { hdrs[k] = v; });
+
+        if (resp.status === 429 || resp.status === 503) {
+          // Rate limited or service unavailable — backoff and retry
+          const retryAfter = resp.headers.get('Retry-After');
+          const waitMs = retryAfter
+            ? parseInt(retryAfter) * 1000
+            : Math.min(BASE_DELAY * Math.pow(2, attempt + 1) + Math.random() * 1000, 60000);
+
+          logEntry(`HTTP ${resp.status} at offset=${offset}, attempt=${attempt+1}/${MAX_RETRIES}, waiting ${Math.round(waitMs/1000)}s. Headers: ${JSON.stringify(hdrs)}`);
+
+          gbifDownloadState.retrying = true;
+          gbifDownloadState.retryWait = Math.round(waitMs / 1000);
+          updateGbifProgressUI();
+
+          await new Promise(r => setTimeout(r, waitMs));
+          gbifDownloadState.retrying = false;
+          continue;
+        }
+
+        if (resp.status === 404) {
+          // Likely hit the GBIF offset limit — treat what we have as complete
+          logEntry(`HTTP 404 at offset=${offset}. Likely offset limit reached. Treating ${allSpecies.length} species as complete. Headers: ${JSON.stringify(hdrs)}`);
+          let body = '';
+          try { body = await resp.text(); } catch(_) {}
+          logEntry(`404 response body: ${body.substring(0, 500)}`);
+          // Finish gracefully with what we have
+          success = false;
+          break;
+        }
+
+        if (!resp.ok) {
+          let body = '';
+          try { body = await resp.text(); } catch(_) {}
+          logEntry(`HTTP ${resp.status} at offset=${offset}, attempt=${attempt+1}/${MAX_RETRIES}. Headers: ${JSON.stringify(hdrs)}. Body: ${body.substring(0, 500)}`);
+
+          if (attempt === MAX_RETRIES - 1) {
+            throw new Error(`HTTP ${resp.status}`);
+          }
+          const waitMs = BASE_DELAY * Math.pow(2, attempt) + Math.random() * 1000;
+          gbifDownloadState.retrying = true;
+          gbifDownloadState.retryWait = Math.round(waitMs / 1000);
+          updateGbifProgressUI();
+          await new Promise(r => setTimeout(r, waitMs));
+          gbifDownloadState.retrying = false;
+          continue;
+        }
+
+        logEntry(`OK offset=${offset}, status=${resp.status}`);
+        data = await resp.json();
+        success = true;
+        break;
+      } catch (e) {
+        logEntry(`Error at offset=${offset}, attempt=${attempt+1}/${MAX_RETRIES}: ${e.message}`);
+        if (attempt === MAX_RETRIES - 1) {
+          gbifDownloadState.status = 'error';
+          gbifDownloadState.error = e.message || 'Network error';
+          gbifDownloadState.retrying = false;
+          renderEditCategory();
+          return allSpecies;
+        }
+        const waitMs = BASE_DELAY * Math.pow(2, attempt) + Math.random() * 1000;
+        gbifDownloadState.retrying = true;
+        gbifDownloadState.retryWait = Math.round(waitMs / 1000);
+        updateGbifProgressUI();
+        await new Promise(r => setTimeout(r, waitMs));
+        gbifDownloadState.retrying = false;
+      }
+    }
+
+    // If we got a 404 (offset limit), break out gracefully
+    if (!success && allSpecies.length > 0) {
+      logEntry(`Stopping pagination at offset=${offset} with ${allSpecies.length} species collected`);
+      break;
+    }
+    if (!success) break;
+
+    if (total === null) {
+      total = data.count;
+      gbifDownloadState.total = total;
+      logEntry(`Total species reported by API: ${total}`);
+    }
+
+    for (const r of data.results) {
+      const entry = {
+        gbifKey: r.key || r.nubKey,
+        scientific: r.canonicalName || r.scientificName || '',
+        namePl: '',
+        nameEn: ''
+      };
+      if (r.vernacularNames && r.vernacularNames.length) {
+        for (const vn of r.vernacularNames) {
+          if (vn.language === 'pol' && !entry.namePl) entry.namePl = vn.vernacularName;
+          if (vn.language === 'eng' && !entry.nameEn) entry.nameEn = vn.vernacularName;
+        }
+      }
+      allSpecies.push(entry);
+    }
+
+    offset += PAGE_SIZE;
+    gbifDownloadState.loaded = allSpecies.length;
+    updateGbifProgressUI();
+
+    if (data.endOfRecords || offset >= total) break;
+
+    // Polite delay between requests
+    await new Promise(r => setTimeout(r, BASE_DELAY));
+  }
+
+  logEntry(`Download complete. Total species: ${allSpecies.length}`);
+  gbifDownloadState.status = 'done';
+  gbifDownloadState.loaded = allSpecies.length;
+
+  // Cache in IndexedDB
+  try {
+    await setGbifCache(taxonKey, allSpecies);
+  } catch (e) {
+    console.error('Failed to cache GBIF data', e);
+  }
+
+  // Also keep in memory
+  gbifSpeciesCache[taxonKey] = allSpecies;
+
+  renderEditCategory();
+  return allSpecies;
+}
+
+/**
+ * Loads a GBIF species list: from memory cache, then IndexedDB, then fetches from API.
+ * @param {number} taxonKey - GBIF higher taxon key.
+ * @returns {Promise<Array>} Species list.
+ */
+async function loadGbifSpecies(taxonKey) {
+  if (gbifSpeciesCache[taxonKey]) return gbifSpeciesCache[taxonKey];
+
+  const cached = await getGbifCache(taxonKey);
+  if (cached && cached.species) {
+    gbifSpeciesCache[taxonKey] = cached.species;
+    return cached.species;
+  }
+
+  return fetchGbifSpecies(taxonKey);
+}
+
+/**
+ * Called when the preconfigured species list dropdown changes in the category editor.
+ * Sets or clears the gbifListKey on the editCatState and triggers loading.
+ * @param {string} val - The GBIF taxon key as string, or '' to clear.
+ */
+async function onGbifPresetChange(val) {
+  if (!editCatState) return;
+  if (!val) {
+    delete editCatState.gbifListKey;
+    renderEditCategory();
+    return;
+  }
+  const key = parseInt(val);
+  editCatState.gbifListKey = key;
+  await loadGbifSpecies(key);
+  renderEditCategory();
+}
+
+/**
+ * Clears the preconfigured species list selection from the current category.
+ */
+function clearGbifPreset() {
+  if (!editCatState) return;
+  delete editCatState.gbifListKey;
+  renderEditCategory();
+}
+
+/**
+ * Updates the GBIF download progress UI in-place without re-rendering the
+ * entire category form. Falls back to full re-render if the progress container
+ * doesn't exist (e.g., after initial render).
+ */
+function updateGbifProgressUI() {
+  const el = document.getElementById('gbifProgressContainer');
+  if (!el) { renderEditCategory(); return; }
+  const dl = gbifDownloadState;
+  if (!dl) return;
+  if (dl.status === 'fetching') {
+    const pct = dl.total ? Math.round((dl.loaded / dl.total) * 100) : 0;
+    const retryMsg = dl.retrying ? `<div style="color:var(--amber);font-size:0.78rem;margin-top:4px">⏳ Rate limited — retrying in ${dl.retryWait}s...</div>` : '';
+    el.innerHTML = `<div class="gbif-progress">
+      <div class="gbif-progress-text">Downloading species data... ${dl.total ? `${dl.loaded.toLocaleString()} / ${dl.total.toLocaleString()}` : 'starting...'}</div>
+      <div class="gbif-progress-bar"><div class="gbif-progress-fill" style="width:${pct}%"></div></div>
+      ${retryMsg}
+    </div>`;
+  } else if (dl.status === 'done') {
+    const cached = gbifSpeciesCache[dl.taxonKey];
+    el.innerHTML = `<div class="gbif-status gbif-status-ok">✓ ${cached ? cached.length.toLocaleString() : '?'} species loaded</div>`;
+  } else if (dl.status === 'error') {
+    el.innerHTML = `<div class="gbif-status gbif-status-err">✗ Download failed: ${esc(dl.error)}${dl.loaded ? ` (got ${dl.loaded} species so far)` : ''}.<br>
+      <a href="#" onclick="event.preventDefault();fetchGbifSpecies(${dl.taxonKey})">Retry</a> · <a href="#" onclick="event.preventDefault();downloadGbifErrorReport()">Download error report</a></div>`;
+  }
+}
+
+/**
+ * Downloads a diagnostic text report with GBIF download logs, timestamps,
+ * HTTP status codes, headers, and error details. Useful for debugging on mobile.
+ */
+function downloadGbifErrorReport() {
+  const dl = gbifDownloadState;
+  if (!dl) return;
+  const lines = [
+    '=== GBIF Download Error Report ===',
+    `Generated: ${new Date().toISOString()}`,
+    `User Agent: ${navigator.userAgent}`,
+    `Taxon Key: ${dl.taxonKey}`,
+    `Status: ${dl.status}`,
+    `Error: ${dl.error || 'none'}`,
+    `Species loaded: ${dl.loaded || 0}`,
+    `Total reported by API: ${dl.total || 'unknown'}`,
+    '',
+    '=== Request Log ===',
+    ...(dl.log || ['No log entries']),
+    '',
+    '=== End of Report ==='
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `gbif-error-report-${Date.now()}.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ==================== EDIT CATEGORY ====================
+
+/**
+ * Temporary state for the category editor form. Deep-copied from the real data
+ * so changes can be discarded on cancel. Null when not editing.
+ * Extra property _editItemIndex (number or -1) tracks which item is being edited.
+ * Extra property _newItem holds a staging item that hasn't been committed yet.
+ */
+let editCatState = null;
+
+/**
+ * Opens the category editor. If catId is provided, edits that category;
+ * otherwise creates a new one with defaults.
+ * @param {string} [catId] - ID of existing category to edit, or undefined for new.
+ */
+function editCategory(catId) {
+  const cat = catId ? getCatById(catId) : null;
+  editCatState = cat ? JSON.parse(JSON.stringify(cat)) : {
+    id: uid(), name: '', description: '', items: [], prerequisites: [], unlockThreshold: 80
+  };
+  gbifDownloadState = null;
+  currentView = 'editCategory';
+  render();
+
+  // If category has a GBIF preset, ensure it's loaded into memory
+  if (editCatState.gbifListKey && !gbifSpeciesCache[editCatState.gbifListKey]) {
+    loadGbifSpecies(editCatState.gbifListKey).then(() => {
+      if (currentView === 'editCategory') renderEditCategory();
+    });
+  }
+}
+
+/**
+ * Renders the category edit form: name, description, unlock threshold,
+ * prerequisite selector with tags, and a list of items with edit/delete buttons.
+ */
+function renderEditCategory() {
+  const cat = editCatState;
+  const isNew = !getCatById(cat.id);
+  const otherCats = appData.categories.filter(c => c.id !== cat.id);
+
+  let html = `<button class="back-link" onclick="cancelEdit()">← Back to editor</button>
+    <div class="editor-panel">
+      <h3>${isNew ? 'New Category' : 'Edit Category'}</h3>
+      <div class="form-group">
+        <label class="form-label">Preconfigured species list</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="form-select" style="flex:1" onchange="onGbifPresetChange(this.value)" id="gbifPresetSelect">
+            <option value="">-- None --</option>
+            ${GBIF_PRESETS.map(p => `<option value="${p.key}" ${cat.gbifListKey === p.key ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
+          </select>
+          ${cat.gbifListKey ? `<button class="btn btn-ghost btn-sm" onclick="clearGbifPreset()" title="Clear selection">×</button>` : ''}
+        </div>
+        <div id="gbifProgressContainer">
+        ${(() => {
+          if (!cat.gbifListKey) return '';
+          const dl = gbifDownloadState;
+          const cached = gbifSpeciesCache[cat.gbifListKey];
+          if (cached) {
+            return `<div class="gbif-status gbif-status-ok">✓ ${cached.length.toLocaleString()} species loaded</div>`;
+          }
+          if (dl && dl.taxonKey === cat.gbifListKey && dl.status === 'fetching') {
+            const pct = dl.total ? Math.round((dl.loaded / dl.total) * 100) : 0;
+            return `<div class="gbif-progress">
+              <div class="gbif-progress-text">Downloading species data... ${dl.total ? `${dl.loaded.toLocaleString()} / ${dl.total.toLocaleString()}` : 'starting...'}</div>
+              <div class="gbif-progress-bar"><div class="gbif-progress-fill" style="width:${pct}%"></div></div>
+            </div>`;
+          }
+          if (dl && dl.taxonKey === cat.gbifListKey && dl.status === 'error') {
+            return `<div class="gbif-status gbif-status-err">✗ Download failed: ${esc(dl.error)}.<br><a href="#" onclick="event.preventDefault();fetchGbifSpecies(${cat.gbifListKey})">Retry</a> · <a href="#" onclick="event.preventDefault();downloadGbifErrorReport()">Download error report</a></div>`;
+          }
+          return `<div class="gbif-status" style="color:var(--text3)">Loading cache...</div>`;
+        })()}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" value="${esc(cat.name)}" oninput="editCatState.name=this.value" placeholder="e.g., Common European Ducks">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" oninput="editCatState.description=this.value" placeholder="Optional description...">${esc(cat.description || '')}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Unlock Threshold (%)</label>
+          <input class="form-input" type="number" min="0" max="100" value="${cat.unlockThreshold || 80}" onchange="editCatState.unlockThreshold=parseInt(this.value)||80">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Add Prerequisite</label>
+          <select class="form-select" onchange="addPrereq(this.value);this.value=''">
+            <option value="">Select...</option>
+            ${otherCats.filter(c => !(cat.prerequisites||[]).includes(c.id)).map(c =>
+              `<option value="${c.id}">${esc(c.name)}</option>`
+            ).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="prereq-tags">
+        ${(cat.prerequisites||[]).map(pid => {
+          const pc = getCatById(pid);
+          return `<span class="prereq-tag">${esc(pc?.name || '?')} <span class="remove-prereq" onclick="removePrereq('${pid}')">×</span></span>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="editor-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin-bottom:0">Items (${cat.items.length})</h3>
+        <button class="btn btn-primary btn-sm" onclick="addNewItem()">+ Add Item</button>
+      </div>
+      <div class="items-list">
+        ${cat.items.length === 0 ? '<div style="color:var(--text3);font-size:0.88rem;text-align:center;padding:20px">No items yet</div>' : ''}
+        ${cat.items.map((item, i) => `
+          <div class="item-row">
+            <div class="item-name">${esc(item.name) || '<em style="color:var(--text3)">Unnamed</em>'}</div>
+            <div class="item-images-count">${item.images.length} img${item.images.length !== 1 ? 's' : ''}</div>
+            <button class="btn btn-ghost btn-sm" onclick="editItemInCat(${i})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="removeItemFromCat(${i})">×</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      ${!isNew ? `<button class="btn btn-danger" onclick="deleteCategory('${cat.id}')">Delete Category</button>` : ''}
+      <button class="btn btn-ghost" onclick="cancelEdit()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Save Category</button>
+    </div>`;
+  container.innerHTML = html;
+}
+
+/** Adds a prerequisite category to the category being edited. */
+function addPrereq(catId) {
+  if (!catId || !editCatState) return;
+  if (!editCatState.prerequisites) editCatState.prerequisites = [];
+  if (!editCatState.prerequisites.includes(catId)) editCatState.prerequisites.push(catId);
+  render();
+}
+
+/** Removes a prerequisite category from the category being edited. */
+function removePrereq(catId) {
+  if (!editCatState) return;
+  editCatState.prerequisites = (editCatState.prerequisites||[]).filter(id => id !== catId);
+  render();
+}
+
+/**
+ * Creates a new item in staging (_newItem) and opens the item editor.
+ * The item is NOT added to the category's items array until saveItem() is called.
+ * This prevents ghost/empty items from appearing when the user cancels.
+ */
+function addNewItem() {
+  if (!editCatState) return;
+  const newItem = { id: uid(), name: '', images: [], altNames: [] };
+  editCatState._newItem = newItem;
+  editCatState._editItemIndex = -1; // sentinel for "new item"
+  currentView = 'editItem';
+  render();
+}
+
+/** Removes an item from the category being edited (by index). */
+function removeItemFromCat(index) {
+  if (!editCatState) return;
+  editCatState.items.splice(index, 1);
+  render();
+}
+
+/** Opens the item editor for an existing item at the given index. */
+function editItemInCat(index) {
+  editCatState._editItemIndex = index;
+  currentView = 'editItem';
+  render();
+}
+
+/**
+ * Commits the editCatState to appData. If the category already exists (by ID),
+ * updates it in place; otherwise appends it. Validates that name is non-empty.
+ */
+function saveCategory() {
+  if (!editCatState) return;
+  if (!editCatState.name.trim()) { showToast('Category name is required'); return; }
+  const existing = appData.categories.findIndex(c => c.id === editCatState.id);
+  delete editCatState._editItemIndex;
+  delete editCatState._newItem;
+  if (existing >= 0) {
+    appData.categories[existing] = editCatState;
+  } else {
+    appData.categories.push(editCatState);
+  }
+  editCatState = null;
+  saveData();
+  currentView = 'home';
+  render();
+  showToast('Category saved');
+}
+
+/**
+ * Deletes a category and cleans up: removes it from other categories' prerequisites,
+ * removes any confusion pairs that reference items in this category.
+ * Prompts for confirmation before proceeding.
+ */
+function deleteCategory(catId) {
+  if (!confirm('Delete this category and all its items?')) return;
+  appData.categories = appData.categories.filter(c => c.id !== catId);
+  // Remove from prerequisites
+  appData.categories.forEach(c => {
+    c.prerequisites = (c.prerequisites||[]).filter(id => id !== catId);
+  });
+  // Remove related confusions
+  appData.confusions = appData.confusions.filter(c =>
+    c.itemA.catId !== catId && c.itemB.catId !== catId
+  );
+  editCatState = null;
+  saveData();
+  currentView = 'home';
+  render();
+  showToast('Category deleted');
+}
+
+/** Discards any unsaved changes and returns to the editor home screen. */
+function cancelEdit() {
+  editCatState = null;
+  currentView = 'home';
+  render();
+}
+
+// ==================== WIKIMEDIA PHOTO SEARCH ====================
+
+/** State for the Wikimedia photo picker */
+let wikiPhotoState = null;
+
+/**
+ * Determines the best search query for finding photos of the current item.
+ * If the item has a gbifKey and we have the GBIF species cache, use the scientific name.
+ * Otherwise, fall back to whatever is in the name input.
+ * @returns {string} The search query.
+ */
+function getPhotoSearchQuery() {
+  const item = getEditingItem();
+  if (!item) return '';
+
+  // If item came from GBIF, use scientific name (best for Wikimedia)
+  if (item.gbifKey && editCatState?.gbifListKey && gbifSpeciesCache[editCatState.gbifListKey]) {
+    const sp = gbifSpeciesCache[editCatState.gbifListKey].find(s => s.gbifKey === item.gbifKey);
+    if (sp && sp.scientific) return sp.scientific;
+  }
+
+  // Check altNames for something that looks like a scientific name (two Latin words)
+  const alts = item.altNames || [];
+  for (const alt of alts) {
+    if (/^[A-Z][a-z]+ [a-z]+$/.test(alt.trim())) return alt.trim();
+  }
+
+  // Fall back to input value or item name
+  const nameInput = document.getElementById('itemNameInput');
+  return (nameInput?.value || item.name || '').trim();
+}
+
+/**
+ * Opens the photo search panel. Fetches images from Wikimedia Commons
+ * matching the item's scientific or common name.
+ */
+async function openPhotoSearch() {
+  const query = getPhotoSearchQuery();
+  if (!query) { showToast('Enter a name first'); return; }
+
+  wikiPhotoState = { query, results: [], loading: true, selected: new Set(), error: null };
+  renderPhotoPicker();
+  await searchWikimediaPhotos(query);
+}
+
+/**
+ * Searches Wikimedia Commons for images matching the given query.
+ * Uses the MediaWiki API with generator=search in the File namespace (ns=6).
+ * Requests thumbnails at 400px for the picker grid + 800px URLs for actual use.
+ * @param {string} query - Search query (scientific name preferred).
+ */
+async function searchWikimediaPhotos(query) {
+  const url = `https://commons.wikimedia.org/w/api.php?action=query`
+    + `&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=20`
+    + `&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=400`
+    + `&format=json&origin=*`;
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    const pages = data.query?.pages || {};
+    const results = Object.values(pages)
+      .filter(p => p.imageinfo && p.imageinfo.length)
+      .map(p => {
+        const ii = p.imageinfo[0];
+        const meta = ii.extmetadata || {};
+        // Build the 800px thumbnail URL from the thumburl pattern
+        // Wikimedia thumb URLs end like: .../thumb/a/ab/File.jpg/400px-File.jpg
+        // We replace the last /NNNpx- segment with /800px-
+        const thumb400 = ii.thumburl || '';
+        const thumb800 = thumb400.replace(/\/\d+px-([^\/]+)$/, '/800px-$1');
+        return {
+          pageId: p.pageid,
+          title: p.title,
+          thumb: thumb400,
+          url800: thumb800,
+          urlFull: ii.url || '',
+          desc: (meta.ImageDescription?.value || '').replace(/<[^>]*>/g, '').substring(0, 120),
+          author: (meta.Artist?.value || '').replace(/<[^>]*>/g, '').substring(0, 80),
+          license: meta.LicenseShortName?.value || ''
+        };
+      })
+      // Filter out SVGs, maps, icons etc — keep only photos
+      .filter(r => /\.(jpg|jpeg|png|webp)/i.test(r.title));
+
+    wikiPhotoState.results = results;
+    wikiPhotoState.loading = false;
+    wikiPhotoState.error = results.length === 0 ? 'No photos found. Try a different name.' : null;
+  } catch (e) {
+    wikiPhotoState.loading = false;
+    wikiPhotoState.error = `Search failed: ${e.message}`;
+  }
+  renderPhotoPicker();
+}
+
+/**
+ * Renders the photo picker grid inside the item editor.
+ * Shows loading state, results grid with selection checkboxes, and action buttons.
+ */
+function renderPhotoPicker() {
+  const el = document.getElementById('wikiPhotoPickerArea');
+  if (!el || !wikiPhotoState) return;
+
+  const st = wikiPhotoState;
+
+  if (st.loading) {
+    el.innerHTML = `<div class="wiki-picker">
+      <div class="wiki-picker-header">
+        <span class="wiki-picker-query">Searching: <b>${esc(st.query)}</b></span>
+        <button class="btn btn-ghost btn-sm" onclick="closePhotoPicker()">×</button>
+      </div>
+      <div style="text-align:center;padding:30px;color:var(--text3)">Searching Wikimedia Commons...</div>
+    </div>`;
+    return;
+  }
+
+  if (st.error) {
+    el.innerHTML = `<div class="wiki-picker">
+      <div class="wiki-picker-header">
+        <span class="wiki-picker-query">Search: <b>${esc(st.query)}</b></span>
+        <button class="btn btn-ghost btn-sm" onclick="closePhotoPicker()">×</button>
+      </div>
+      <div style="text-align:center;padding:20px;color:var(--text3)">${esc(st.error)}</div>
+      <div style="padding:0 12px 12px;display:flex;gap:8px">
+        <input class="form-input" id="wikiSearchInput" value="${esc(st.query)}" placeholder="Try another search..." style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="retryPhotoSearch()">Search</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const selCount = st.selected.size;
+  el.innerHTML = `<div class="wiki-picker">
+    <div class="wiki-picker-header">
+      <span class="wiki-picker-query">Results for: <b>${esc(st.query)}</b></span>
+      <button class="btn btn-ghost btn-sm" onclick="closePhotoPicker()">×</button>
+    </div>
+    <div class="wiki-picker-grid">
+      ${st.results.map((r, i) => `
+        <div class="wiki-photo-card ${st.selected.has(i) ? 'selected' : ''}" onclick="toggleWikiPhoto(${i})">
+          <img src="${esc(r.thumb)}" loading="lazy" alt="">
+          <div class="wiki-photo-check">${st.selected.has(i) ? '✓' : ''}</div>
+          ${r.license ? `<div class="wiki-photo-license">${esc(r.license)}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>
+    <div class="wiki-picker-footer">
+      <div style="display:flex;gap:8px;align-items:center;flex:1">
+        <input class="form-input" id="wikiSearchInput" value="${esc(st.query)}" placeholder="Search again..." style="flex:1;height:34px;font-size:0.82rem">
+        <button class="btn btn-ghost btn-sm" onclick="retryPhotoSearch()">Search</button>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addSelectedWikiPhotos()" ${selCount === 0 ? 'disabled' : ''}>
+        Add ${selCount > 0 ? selCount + ' photo' + (selCount > 1 ? 's' : '') : 'selected'}
+      </button>
+    </div>
+  </div>`;
+}
+
+/** Toggles selection of a photo in the wiki picker */
+function toggleWikiPhoto(index) {
+  if (!wikiPhotoState) return;
+  if (wikiPhotoState.selected.has(index)) {
+    wikiPhotoState.selected.delete(index);
+  } else {
+    wikiPhotoState.selected.add(index);
+  }
+  renderPhotoPicker();
+}
+
+/** Retries search with whatever is in the search input */
+async function retryPhotoSearch() {
+  const input = document.getElementById('wikiSearchInput');
+  const query = input?.value?.trim();
+  if (!query) return;
+  wikiPhotoState = { query, results: [], loading: true, selected: new Set(), error: null };
+  renderPhotoPicker();
+  await searchWikimediaPhotos(query);
+}
+
+/** Closes the photo picker */
+function closePhotoPicker() {
+  wikiPhotoState = null;
+  const el = document.getElementById('wikiPhotoPickerArea');
+  if (el) el.innerHTML = '';
+}
+
+/**
+ * Adds selected Wikimedia photos to the current item's images array.
+ * Uses the 800px thumbnail URL. Stores author/license as caption.
+ */
+function addSelectedWikiPhotos() {
+  if (!wikiPhotoState) return;
+  const item = getEditingItem();
+  if (!item) return;
+
+  persistItemInputs();
+
+  for (const idx of wikiPhotoState.selected) {
+    const photo = wikiPhotoState.results[idx];
+    if (!photo) continue;
+    // Build attribution caption
+    const caption = [photo.author, photo.license].filter(Boolean).join(' · ');
+    item.images.push({ src: photo.url800, caption });
+  }
+
+  const count = wikiPhotoState.selected.size;
+  closePhotoPicker();
+  render();
+  showToast(`Added ${count} photo${count > 1 ? 's' : ''}`);
+}
+
+// ==================== EDIT ITEM ====================
+
+/**
+ * Renders the item editor form: name, alt names, image upload area (drag-and-drop
+ * + file picker + URL input), and image thumbnail gallery with remove buttons.
+ * Handles both new items (from _newItem staging) and existing items (by index).
+ */
+function renderEditItem() {
+  const cat = editCatState;
+  if (!cat) { currentView = 'editCategory'; render(); return; }
+  const isNewItem = cat._editItemIndex === -1;
+  const item = isNewItem ? cat._newItem : cat.items[cat._editItemIndex];
+  if (!item) { currentView = 'editCategory'; render(); return; }
+
+  const hasGbifList = cat.gbifListKey && gbifSpeciesCache[cat.gbifListKey];
+
+  let html = `<button class="back-link" onclick="backToEditCategory()">← Back to ${esc(cat.name)}</button>
+    <div class="editor-panel">
+      <h3>Edit Item</h3>
+      <div class="form-group" style="position:relative">
+        <label class="form-label">Name ${hasGbifList ? '<span style="font-weight:400;color:var(--text3);font-size:0.78rem"> — type to search species list</span>' : ''}</label>
+        <input class="form-input" id="itemNameInput" value="${esc(item.name)}" placeholder="e.g., Mallard" autocomplete="off" oninput="onItemNameInput(event)" onfocus="onItemNameInput({target:this})" onblur="setTimeout(()=>document.getElementById('gbifItemDropdown')?.classList.remove('show'),200)">
+        <div class="autocomplete-dropdown" id="gbifItemDropdown"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alternative Names (comma-separated)</label>
+        <input class="form-input" id="itemAltInput" value="${esc((item.altNames||[]).join(', '))}" placeholder="e.g., Wild Duck, Anas platyrhynchos">
+      </div>
+    </div>
+
+    <div class="editor-panel">
+      <h3>Images</h3>
+      <div class="image-upload-area" id="imageDropZone">
+        <div>📷 Drag & drop images here, or click to browse</div>
+        <div style="margin-top:6px;font-size:0.78rem">Supports PNG, JPG, GIF, WebP</div>
+        <input type="file" id="imageFileInput" multiple accept="image/*" onchange="handleImageFiles(this.files)">
+      </div>
+      <div class="image-url-input">
+        <input class="form-input" id="imageUrlInput" placeholder="Or paste image URL..." style="flex:1">
+        <button class="btn btn-ghost" onclick="addImageUrl()">Add URL</button>
+      </div>
+      <button class="btn btn-ghost" style="width:100%;margin:8px 0;border:1px dashed var(--border)" onclick="openPhotoSearch()">🔍 Find photos on Wikimedia Commons</button>
+      <div id="wikiPhotoPickerArea"></div>
+      <div class="image-thumbnails" id="imageThumbs">
+        ${item.images.map((img, i) => `
+          <div class="image-thumb-with-caption">
+            <div class="image-thumb">
+              <img src="${esc(imgSrc(img))}" onerror="this.parentElement.style.background='var(--bg4)';this.alt='Error'">
+              <button class="remove-btn" onclick="removeImage(${i})">×</button>
+            </div>
+            <input class="caption-input" placeholder="Caption..." value="${esc(imgCaption(img))}" onchange="updateImageCaption(${i}, this.value)">
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-ghost" onclick="backToEditCategory()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+    </div>`;
+  container.innerHTML = html;
+
+  // Setup drag and drop
+  const dropZone = document.getElementById('imageDropZone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleImageFiles(e.dataTransfer.files);
+  });
+}
+
+/**
+ * Returns the item object currently being edited — either a staged new item
+ * (when _editItemIndex === -1) or an existing item in the category's items array.
+ * @returns {Object|null} The item being edited.
+ */
+function getEditingItem() {
+  if (!editCatState) return null;
+  if (editCatState._editItemIndex === -1) return editCatState._newItem;
+  return editCatState.items[editCatState._editItemIndex];
+}
+
+/**
+ * Handles input on the item name field. If the category has a GBIF species list,
+ * shows an autocomplete dropdown searching by Polish name, English name, and
+ * scientific name. Results show all three names for clarity.
+ */
+function onItemNameInput(e) {
+  const cat = editCatState;
+  const dropdown = document.getElementById('gbifItemDropdown');
+  if (!dropdown) return;
+  if (!cat || !cat.gbifListKey || !gbifSpeciesCache[cat.gbifListKey]) {
+    dropdown.classList.remove('show');
+    return;
+  }
+  const val = normalize(e.target.value);
+  if (!val || val.length < 2) { dropdown.classList.remove('show'); return; }
+
+  const list = gbifSpeciesCache[cat.gbifListKey];
+  const matches = [];
+  for (const sp of list) {
+    if (matches.length >= 10) break;
+    const sci = normalize(sp.scientific);
+    const pl = normalize(sp.namePl || '');
+    const en = normalize(sp.nameEn || '');
+    if (pl.includes(val) || en.includes(val) || sci.includes(val)) {
+      matches.push(sp);
+    }
+  }
+
+  if (!matches.length) { dropdown.classList.remove('show'); return; }
+
+  dropdown.innerHTML = matches.map(sp => {
+    const displayName = sp.namePl || sp.scientific;
+    const subtitle = [sp.scientific, sp.nameEn].filter(Boolean).filter(n => n !== displayName).join(' · ');
+    return `<div class="autocomplete-item gbif-ac-item" onmousedown="selectGbifSpecies(${sp.gbifKey})">
+      <div class="gbif-ac-main">${esc(displayName)}</div>
+      ${subtitle ? `<div class="gbif-ac-sub">${esc(subtitle)}</div>` : ''}
+    </div>`;
+  }).join('');
+  dropdown.classList.add('show');
+}
+
+/**
+ * Called when user selects a species from the GBIF autocomplete.
+ * Fills in the name (Polish preferred, then scientific) and alt names
+ * (scientific + English). Also stores the GBIF key on the item.
+ * @param {number} gbifKey - The GBIF usageKey of the selected species.
+ */
+function selectGbifSpecies(gbifKey) {
+  const cat = editCatState;
+  if (!cat || !cat.gbifListKey || !gbifSpeciesCache[cat.gbifListKey]) return;
+  const sp = gbifSpeciesCache[cat.gbifListKey].find(s => s.gbifKey === gbifKey);
+  if (!sp) return;
+
+  const item = getEditingItem();
+  if (!item) return;
+
+  // Primary name: Polish, fallback to scientific
+  item.name = sp.namePl || sp.scientific;
+
+  // Alt names: scientific name always + English if available and different from primary
+  const alts = [];
+  if (sp.scientific && sp.scientific !== item.name) alts.push(sp.scientific);
+  if (sp.nameEn && sp.nameEn !== item.name && sp.nameEn !== sp.scientific) alts.push(sp.nameEn);
+  item.altNames = alts;
+  item.gbifKey = sp.gbifKey;
+
+  // Update DOM inputs directly without full re-render
+  const nameInput = document.getElementById('itemNameInput');
+  const altInput = document.getElementById('itemAltInput');
+  if (nameInput) nameInput.value = item.name;
+  if (altInput) altInput.value = item.altNames.join(', ');
+
+  document.getElementById('gbifItemDropdown')?.classList.remove('show');
+}
+
+/**
+ * Saves the current values from the item editor DOM inputs (name, altNames)
+ * into the item object so they survive a re-render. Call before render().
+ */
+function persistItemInputs() {
+  const item = getEditingItem();
+  if (!item) return;
+  const nameInput = document.getElementById('itemNameInput');
+  const altInput = document.getElementById('itemAltInput');
+  if (nameInput) item.name = nameInput.value.trim();
+  if (altInput) item.altNames = (altInput.value || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+/**
+ * Processes files from drag-and-drop or file picker: converts each image file
+ * to a base64 data URL and appends it as an ImageEntry {src, caption} to the
+ * current item's images array.
+ * @param {FileList} files - Files from an input or drop event.
+ */
+async function handleImageFiles(files) {
+  const item = getEditingItem();
+  if (!item) return;
+  persistItemInputs();
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    try {
+      const base64 = await fileToBase64(file);
+      item.images.push({ src: base64, caption: '' });
+    } catch(e) { console.error('Failed to read image', e); }
+  }
+  render();
+}
+
+/** Adds an image by URL to the current item's images array as {src, caption}. */
+function addImageUrl() {
+  const item = getEditingItem();
+  if (!item) return;
+  persistItemInputs();
+  const input = document.getElementById('imageUrlInput');
+  const url = input?.value?.trim();
+  if (!url) return;
+  item.images.push({ src: url, caption: '' });
+  render();
+}
+
+/** Removes an image from the current item by index. */
+function removeImage(index) {
+  const item = getEditingItem();
+  if (!item) return;
+  persistItemInputs();
+  item.images.splice(index, 1);
+  render();
+}
+
+/**
+ * Updates the caption for an image at the given index. Normalizes legacy string
+ * entries to {src, caption} objects on the fly if needed.
+ * @param {number} index - Image index within the item's images array.
+ * @param {string} caption - The new caption text.
+ */
+function updateImageCaption(index, caption) {
+  const item = getEditingItem();
+  if (!item || !item.images[index]) return;
+  // Normalize legacy string entry to object
+  if (typeof item.images[index] === 'string') {
+    item.images[index] = { src: item.images[index], caption: caption };
+  } else {
+    item.images[index].caption = caption;
+  }
+}
+
+/**
+ * Saves the item being edited. Reads name/altNames from DOM inputs.
+ * If this is a new item (staged in _newItem), commits it to the category's
+ * items array. Validates that name is non-empty.
+ */
+function saveItem() {
+  const item = getEditingItem();
+  if (!item) return;
+  const nameInput = document.getElementById('itemNameInput');
+  const altInput = document.getElementById('itemAltInput');
+  item.name = nameInput?.value?.trim() || '';
+  item.altNames = (altInput?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!item.name) { showToast('Item name is required'); return; }
+  // If this was a new item, add it to the array now
+  if (editCatState._editItemIndex === -1) {
+    editCatState.items.push(item);
+    delete editCatState._newItem;
+  }
+  backToEditCategory();
+  showToast('Item saved');
+}
+
+/**
+ * Navigates back from item editor to category editor.
+ * For existing items: persists current input values (auto-save on navigate).
+ * For new items: discards the staged _newItem (user must click Save explicitly).
+ */
+function backToEditCategory() {
+  // Only persist field values for existing items (not new/cancelled ones)
+  if (editCatState && editCatState._editItemIndex >= 0) {
+    const item = editCatState.items[editCatState._editItemIndex];
+    if (item) {
+      const nameInput = document.getElementById('itemNameInput');
+      const altInput = document.getElementById('itemAltInput');
+      if (nameInput) item.name = nameInput.value.trim();
+      if (altInput) item.altNames = (altInput.value || '').split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  delete editCatState._editItemIndex;
+  delete editCatState._newItem;
+  currentView = 'editCategory';
+  render();
+}
+
+// ==================== EDIT CONFUSION ====================
+
+/** Temporary state for the confusion pair editor. Null when not editing. */
+let editConfState = null;
+
+/**
+ * Opens the confusion pair editor. If confId is provided, edits that pair;
+ * otherwise creates a new one with empty fields.
+ * @param {string} [confId] - ID of existing confusion pair to edit, or undefined for new.
+ */
+function editConfusion(confId) {
+  const conf = confId ? appData.confusions.find(c => c.id === confId) : null;
+  editConfState = conf ? JSON.parse(JSON.stringify(conf)) : {
+    id: uid(),
+    itemA: { catId: '', itemId: '' },
+    itemB: { catId: '', itemId: '' },
+    explanation: '',
+    images: []
+  };
+  currentView = 'editConfusion';
+  render();
+}
+
+/**
+ * Renders the confusion pair editor form: two item dropdowns (grouped by category),
+ * explanation textarea, and image upload area for comparison images.
+ */
+function renderEditConfusion() {
+  const conf = editConfState;
+  if (!conf) { currentView = 'home'; render(); return; }
+  const isNew = !appData.confusions.find(c => c.id === conf.id);
+
+  const allItems = [];
+  appData.categories.forEach(cat => {
+    cat.items.forEach(item => {
+      allItems.push({ catId: cat.id, catName: cat.name, itemId: item.id, itemName: item.name });
+    });
+  });
+
+  const selectedA = conf.itemA.itemId ? `${conf.itemA.catId}|${conf.itemA.itemId}` : '';
+  const selectedB = conf.itemB.itemId ? `${conf.itemB.catId}|${conf.itemB.itemId}` : '';
+
+  let html = `<button class="back-link" onclick="cancelConfEdit()">← Back to editor</button>
+    <div class="editor-panel">
+      <h3>${isNew ? 'New' : 'Edit'} Confusion Pair</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Item A</label>
+          <select class="form-select" id="confItemA" value="${selectedA}" onchange="onConfItemChange('A', this.value)">
+            <option value="">Select item...</option>
+            ${appData.categories.map(cat =>
+              `<optgroup label="${esc(cat.name)}">${cat.items.map(item =>
+                `<option value="${cat.id}|${item.id}" ${selectedA === cat.id+'|'+item.id ? 'selected' : ''}>${esc(item.name)}</option>`
+              ).join('')}</optgroup>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Item B</label>
+          <select class="form-select" id="confItemB" onchange="onConfItemChange('B', this.value)">
+            <option value="">Select item...</option>
+            ${appData.categories.map(cat =>
+              `<optgroup label="${esc(cat.name)}">${cat.items.map(item =>
+                `<option value="${cat.id}|${item.id}" ${selectedB === cat.id+'|'+item.id ? 'selected' : ''}>${esc(item.name)}</option>`
+              ).join('')}</optgroup>`
+            ).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Explanation (shown when user confuses these two)</label>
+        <textarea class="form-textarea" id="confExplanation" placeholder="e.g., The Great Tit has a distinctive black belly stripe that the Blue Tit lacks...">${esc(conf.explanation || '')}</textarea>
+      </div>
+    </div>
+
+    <div class="editor-panel">
+      <h3>Comparison Images</h3>
+      <div class="image-upload-area" id="confDropZone">
+        <div>📷 Drag & drop comparison images here, or click to browse</div>
+        <input type="file" id="confFileInput" multiple accept="image/*" onchange="handleConfImageFiles(this.files)">
+      </div>
+      <div class="image-url-input">
+        <input class="form-input" id="confImageUrlInput" placeholder="Or paste image URL...">
+        <button class="btn btn-ghost" onclick="addConfImageUrl()">Add URL</button>
+      </div>
+      <div class="image-thumbnails" id="confImageThumbs">
+        ${(conf.images||[]).map((img, i) => `
+          <div class="image-thumb">
+            <img src="${esc(imgSrc(img))}">
+            <button class="remove-btn" onclick="removeConfImage(${i})">×</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      ${!isNew ? `<button class="btn btn-danger" onclick="deleteConfusion('${conf.id}')">Delete</button>` : ''}
+      <button class="btn btn-ghost" onclick="cancelConfEdit()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveConfusion()">Save</button>
+    </div>`;
+  container.innerHTML = html;
+
+  // Drag and drop for confusion images
+  const dropZone = document.getElementById('confDropZone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleConfImageFiles(e.dataTransfer.files);
+  });
+}
+
+/** Updates item A or B in the confusion pair when the dropdown selection changes. */
+function onConfItemChange(side, val) {
+  if (!editConfState) return;
+  const [catId, itemId] = val.split('|');
+  if (side === 'A') { editConfState.itemA = { catId, itemId }; }
+  else { editConfState.itemB = { catId, itemId }; }
+}
+
+/** Processes image files for confusion pair comparison images (same as item images). */
+async function handleConfImageFiles(files) {
+  if (!editConfState) return;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    try {
+      const base64 = await fileToBase64(file);
+      editConfState.images.push(base64);
+    } catch(e) {}
+  }
+  render();
+}
+
+/** Adds an image URL to the confusion pair's comparison images. */
+function addConfImageUrl() {
+  if (!editConfState) return;
+  const url = document.getElementById('confImageUrlInput')?.value?.trim();
+  if (!url) return;
+  editConfState.images.push(url);
+  render();
+}
+
+/** Removes a comparison image from the confusion pair by index. */
+function removeConfImage(i) {
+  if (!editConfState) return;
+  editConfState.images.splice(i, 1);
+  render();
+}
+
+/** Commits the confusion pair to appData. Validates that both items are selected. */
+function saveConfusion() {
+  if (!editConfState) return;
+  const expl = document.getElementById('confExplanation');
+  if (expl) editConfState.explanation = expl.value.trim();
+  if (!editConfState.itemA.itemId || !editConfState.itemB.itemId) {
+    showToast('Select both items'); return;
+  }
+  const existing = appData.confusions.findIndex(c => c.id === editConfState.id);
+  if (existing >= 0) appData.confusions[existing] = editConfState;
+  else appData.confusions.push(editConfState);
+  editConfState = null;
+  saveData();
+  currentView = 'home';
+  render();
+  showToast('Confusion pair saved');
+}
+
+/** Deletes a confusion pair after confirmation. */
+function deleteConfusion(id) {
+  if (!confirm('Delete this confusion pair?')) return;
+  appData.confusions = appData.confusions.filter(c => c.id !== id);
+  editConfState = null;
+  saveData();
+  currentView = 'home';
+  render();
+  showToast('Confusion pair deleted');
+}
+
+/** Discards unsaved confusion pair changes and returns to editor home. */
+function cancelConfEdit() {
+  editConfState = null;
+  currentView = 'home';
+  render();
+}
+
+// ==================== IMPORT / EXPORT ====================
+
+/** Opens the import/export modal with buttons for JSON export/import, HTML export, and resets. */
+function showImportExportModal() {
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">Import / Export</div>
+      <button class="btn-icon" onclick="closeModal()">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <button class="btn btn-ghost" onclick="exportJSON()" style="justify-content:center;padding:14px">
+        📄 Export as JSON
+      </button>
+      <div style="border-top:1px solid var(--border);margin:8px 0"></div>
+      <button class="btn btn-ghost" onclick="document.getElementById('importFileInput').click()" style="justify-content:center;padding:14px">
+        📥 Import JSON
+      </button>
+      <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importJSON(this.files[0])">
+      <div style="border-top:1px solid var(--border);margin:8px 0"></div>
+      <button class="btn btn-danger" onclick="resetProgress()" style="justify-content:center;padding:14px">
+        🔄 Reset Learning Progress
+      </button>
+      <button class="btn btn-danger" onclick="resetAll()" style="justify-content:center;padding:14px">
+        ⚠ Reset Everything
+      </button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+/** Hides the modal overlay. */
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+/** Exports appData as a downloadable .json file. Images are stored as-is (URLs or base64). */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `${appData.projectName || 'knowledge-tree'}.json`);
+  closeModal();
+  showToast('JSON exported');
+}
+
+/**
+ * Imports a .json file and replaces the current appData. Basic validation checks
+ * that the file has a 'categories' array. Does not merge — full replacement.
+ */
+function importJSON(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data.categories) throw new Error('Invalid format');
+      appData = data;
+      saveData();
+      render();
+      closeModal();
+      showToast('Data imported successfully');
+    } catch(e) {
+      showToast('Invalid JSON file');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * Triggers a file download in the browser by creating a temporary <a> element.
+ * @param {Blob} blob - The file content.
+ * @param {string} filename - The suggested download filename.
+ */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/** Clears all learning progress but keeps categories/items/confusions intact. */
+function resetProgress() {
+  if (!confirm('Reset all learning progress? Your categories and items will be kept.')) return;
+  progress = {};
+  saveData();
+  closeModal();
+  render();
+  showToast('Progress reset');
+}
+
+/** Nuclear reset: clears all data (categories, items, confusions) AND progress. */
+function resetAll() {
+  if (!confirm('Delete ALL data including categories, items, and progress?')) return;
+  appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  progress = {};
+  saveData();
+  closeModal();
+  render();
+  showToast('All data reset');
+}
+
+// ==================== HTML ESCAPE ====================
+
+/**
+ * Escapes a string for safe insertion into HTML. Uses the browser's own
+ * text encoding via a temporary div element to prevent XSS.
+ * @param {string} s - Raw string.
+ * @returns {string} HTML-safe string.
+ */
+function esc(s) {
+  if (!s) return '';
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// ==================== MODE SWITCHING ====================
+
+/**
+ * Switches between 'learn' and 'editor' modes. Resets all transient state
+ * (current view, quiz session, editor forms) and updates the toggle UI.
+ * @param {string} mode - Either 'learn' or 'editor'.
+ */
+function switchMode(mode) {
+  currentMode = mode;
+  currentView = 'home';
+  currentCategoryId = null;
+  currentQuiz = null;
+  editCatState = null;
+  editConfState = null;
+  document.querySelectorAll('#modeToggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  render();
+}
+
+document.querySelectorAll('#modeToggle button').forEach(b => {
+  b.addEventListener('click', () => switchMode(b.dataset.mode));
+});
+
+// Close modal on overlay click
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ==================== INIT ====================
+loadData();
+render();
+</script>
+</body>
+</html>

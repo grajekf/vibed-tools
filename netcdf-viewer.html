@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetCDF Climate Viewer</title>
+
+  <!-- External dependencies -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.1/plotly.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+  <!-- NetCDF parser is inlined in the script below -->
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --text: #e8eaf6;
+      --text-muted: #7b82a8;
+      --success: #43e97b;
+      --warning: #f7b731;
+      --danger: #fc5c7d;
+      --radius: 10px;
+      --sidebar: 280px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar);
+      min-width: var(--sidebar);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar-header {
+      padding: 20px 18px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sidebar-header p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── Upload zone ── */
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface2);
+    }
+
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(79, 142, 247, 0.08);
+    }
+
+    #drop-zone .icon { font-size: 28px; margin-bottom: 6px; }
+    #drop-zone .label { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    #drop-zone .label strong { color: var(--accent); cursor: pointer; }
+    #file-input { display: none; }
+
+    /* ── File info badge ── */
+    #file-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+
+    #file-badge .fname {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    #file-badge .fsize { color: var(--text-muted); flex-shrink: 0; }
+
+    /* ── Controls ── */
+    label.ctrl-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--border);
+      font-size: 9px;
+      cursor: help;
+      position: relative;
+    }
+
+    .info-icon:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 18px;
+      top: -4px;
+      background: #2a2f4a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 9px;
+      font-size: 11px;
+      color: var(--text);
+      white-space: pre-wrap;
+      min-width: 160px;
+      max-width: 200px;
+      z-index: 9999;
+      line-height: 1.5;
+      pointer-events: none;
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+    }
+
+    select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237b82a8'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+      transition: border-color 0.2s;
+    }
+
+    select:hover { border-color: var(--accent); }
+    select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .ctrl-row { margin-bottom: 12px; }
+
+    /* Range slider */
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+      flex: 1;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: var(--accent2);
+      transform: scale(1.2);
+    }
+
+    .slider-val {
+      font-size: 11px;
+      color: var(--accent);
+      min-width: 38px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Min/max inputs */
+    .minmax-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .minmax-row input[type="number"] {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      padding: 6px 8px;
+      font-size: 12px;
+      outline: none;
+      width: 0;
+    }
+
+    .minmax-row input[type="number"]:focus { border-color: var(--accent); }
+
+    /* Collapsible metadata */
+    .collapsible-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0;
+      width: 100%;
+      text-align: left;
+    }
+
+    .collapsible-btn:hover { color: var(--text); }
+    .collapsible-btn .arrow { transition: transform 0.2s; font-size: 9px; }
+    .collapsible-btn.open .arrow { transform: rotate(90deg); }
+    .collapsible-content { display: none; margin-top: 10px; }
+    .collapsible-content.open { display: block; }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+    }
+
+    .meta-table td {
+      padding: 3px 4px;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(46,50,80,0.5);
+    }
+
+    .meta-table td:first-child {
+      color: var(--text-muted);
+      white-space: nowrap;
+      padding-right: 8px;
+      width: 40%;
+    }
+
+    /* ── Status / legend area ── */
+    #colorbar-wrap {
+      padding: 0 16px 14px;
+      display: none;
+    }
+
+    .colorbar-gradient {
+      height: 12px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+    }
+
+    .colorbar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .colorbar-title {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    /* Animate button */
+    #animate-btn {
+      width: 100%;
+      padding: 7px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    #animate-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #animate-btn.playing { border-color: var(--danger); color: var(--danger); }
+    #animate-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── Main content ── */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Welcome screen ── */
+    #welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    #welcome .big-icon { font-size: 64px; }
+    #welcome h2 { font-size: 22px; font-weight: 700; color: var(--text); }
+    #welcome p { color: var(--text-muted); font-size: 13px; max-width: 380px; line-height: 1.6; }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+    .tag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ── Viewer ── */
+    #viewer { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* Top bar */
+    #topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    #topbar .var-name {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    #topbar .dim-info { color: var(--text-muted); }
+    #topbar .spacer { flex: 1; }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+    }
+
+    #click-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(79,142,247,0.1);
+      border: 1px solid rgba(79,142,247,0.25);
+      border-radius: 20px;
+      padding: 3px 12px;
+    }
+
+    /* Map */
+    #map-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15,17,23,0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 1000;
+    }
+
+    #loading-overlay.show { display: flex; }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading-msg { font-size: 13px; color: var(--text-muted); }
+
+    /* Time series panel */
+    #ts-panel {
+      height: 220px;
+      min-height: 220px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #ts-header {
+      display: flex;
+      align-items: center;
+      padding: 6px 14px 0;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    #ts-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex: 1;
+    }
+
+    #ts-title span { color: var(--accent); }
+
+    #ts-chart { flex: 1; min-height: 0; }
+
+    #ts-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      gap: 6px;
+    }
+
+    /* Resize handle */
+    #resize-handle {
+      height: 4px;
+      background: transparent;
+      cursor: ns-resize;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    #resize-handle:hover { background: var(--accent); }
+
+    /* Error toast */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #3a1520;
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 12px 18px;
+      font-size: 12px;
+      max-width: 320px;
+      z-index: 9999;
+      display: none;
+      animation: slide-in 0.25s ease;
+    }
+
+    @keyframes slide-in {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    #toast.show { display: block; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Disabled sections */
+    .ctrl-disabled { opacity: 0.4; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ SIDEBAR ════════════════════ -->
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <h1>🌍 NetCDF Viewer</h1>
+    <p>Climate &amp; geospatial data explorer</p>
+  </div>
+
+  <!-- File upload -->
+  <div class="section">
+    <div class="section-title">Data File</div>
+    <div id="drop-zone">
+      <div class="icon">📂</div>
+      <div class="label">
+        Drag &amp; drop a <strong>.nc file</strong><br>or <strong id="browse-link">browse to upload</strong>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept=".nc">
+    <div id="file-badge" style="margin-top:10px;">
+      <span>📄</span>
+      <span class="fname" id="badge-name"></span>
+      <span class="fsize" id="badge-size"></span>
+    </div>
+  </div>
+
+  <!-- Variable + dimensions -->
+  <div class="section" id="ctrl-section">
+    <div class="section-title">Variable</div>
+    <div class="ctrl-row">
+      <select id="var-select" disabled>
+        <option>— load a file first —</option>
+      </select>
+    </div>
+
+    <div id="dim-ctrls"></div>
+  </div>
+
+  <!-- Visual options -->
+  <div class="section" id="vis-section">
+    <div class="section-title">Display</div>
+    <div class="ctrl-row">
+      <label class="ctrl-label">Color scale</label>
+      <select id="cmap-select" disabled>
+        <option value="viridis">Viridis</option>
+        <option value="plasma">Plasma</option>
+        <option value="RdBu">RdBu (diverging)</option>
+        <option value="RdYlGn">RdYlGn</option>
+        <option value="coolwarm">Coolwarm</option>
+        <option value="YlOrRd">YlOrRd (heat)</option>
+        <option value="Spectral">Spectral</option>
+        <option value="Blues">Blues</option>
+      </select>
+    </div>
+
+    <div class="ctrl-row">
+      <label class="ctrl-label">
+        Value range
+        <span class="info-icon" data-tip="Override the auto-detected min/max.&#10;Leave blank for auto.">i</span>
+      </label>
+      <div class="minmax-row">
+        <input type="number" id="vmin-input" placeholder="Min (auto)" disabled>
+        <input type="number" id="vmax-input" placeholder="Max (auto)" disabled>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <button id="animate-btn" disabled>▶ Animate time steps</button>
+    </div>
+  </div>
+
+  <!-- Colorbar -->
+  <div id="colorbar-wrap">
+    <div class="colorbar-title" id="colorbar-title"></div>
+    <div class="colorbar-gradient" id="colorbar-gradient"></div>
+    <div class="colorbar-labels">
+      <span id="cb-min"></span>
+      <span id="cb-max"></span>
+    </div>
+  </div>
+
+  <!-- Metadata -->
+  <div class="section" id="meta-section" style="display:none;">
+    <button class="collapsible-btn" id="meta-btn">
+      <span class="arrow">▶</span>
+      File metadata
+    </button>
+    <div class="collapsible-content" id="meta-content">
+      <table class="meta-table" id="meta-table"></table>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ════════════════════ MAIN ════════════════════ -->
+<main id="main">
+
+  <!-- Welcome -->
+  <div id="welcome">
+    <div class="big-icon">🌤️</div>
+    <h2>Open a NetCDF file to begin</h2>
+    <p>Load any <code>.nc</code> file with gridded climate data. Supports temperature, precipitation, wind, sea level, and more.</p>
+    <div class="tag-row">
+      <span class="tag">🗺️ Geographic heatmap</span>
+      <span class="tag">📈 Time series</span>
+      <span class="tag">🎞️ Animation</span>
+      <span class="tag">🎨 Custom colormaps</span>
+    </div>
+  </div>
+
+  <!-- Viewer -->
+  <div id="viewer">
+
+    <div id="topbar">
+      <div class="status-dot"></div>
+      <span class="var-name" id="topbar-var">—</span>
+      <span class="dim-info" id="topbar-dims"></span>
+      <div class="spacer"></div>
+      <div id="click-hint">👆 Click map to plot time series</div>
+    </div>
+
+    <div id="map-wrap">
+      <div id="map"></div>
+      <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-msg">Rendering…</div>
+      </div>
+    </div>
+
+    <div id="resize-handle"></div>
+
+    <div id="ts-panel">
+      <div id="ts-header">
+        <div id="ts-title">Time Series</div>
+      </div>
+      <div id="ts-empty">👆 Click a point on the map above to see its time series</div>
+      <div id="ts-chart" style="display:none;"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  Inline NetCDF Classic (v3) Parser
+//  Supports: NC_BYTE, NC_CHAR, NC_SHORT, NC_INT,
+//            NC_FLOAT, NC_DOUBLE, scale_factor, add_offset
+// ═══════════════════════════════════════════════════════
+class NetCDFReader {
+  constructor(arrayBuffer) {
+    this._buf = arrayBuffer instanceof ArrayBuffer ? arrayBuffer : arrayBuffer.buffer;
+    this._view = new DataView(this._buf);
+    this._pos = 0;
+    this._parse();
+  }
+
+  _u8()  { return this._view.getUint8(this._pos++); }
+  _i16() { const v = this._view.getInt16(this._pos, false); this._pos += 2; return v; }
+  _i32() { const v = this._view.getInt32(this._pos, false); this._pos += 4; return v; }
+  _u32() { const v = this._view.getUint32(this._pos, false); this._pos += 4; return v; }
+  _f32() { const v = this._view.getFloat32(this._pos, false); this._pos += 4; return v; }
+  _f64() { const v = this._view.getFloat64(this._pos, false); this._pos += 8; return v; }
+
+  _align4() { const r = this._pos % 4; if (r) this._pos += 4 - r; }
+
+  _string(len) {
+    let s = '';
+    for (let i = 0; i < len; i++) s += String.fromCharCode(this._view.getUint8(this._pos + i));
+    this._pos += len;
+    this._align4();
+    return s;
+  }
+
+  _readValues(type, count) {
+    const NC = NetCDFReader;
+    const bytesBefore = this._pos;
+    let arr;
+    switch(type) {
+      case 1: { // NC_BYTE
+        arr = new Int8Array(this._buf, this._pos, count);
+        this._pos += count; break;
+      }
+      case 2: { // NC_CHAR
+        arr = new Uint8Array(this._buf, this._pos, count);
+        this._pos += count; break;
+      }
+      case 3: { // NC_SHORT
+        const a = new Int16Array(count);
+        for (let i = 0; i < count; i++) a[i] = this._i16();
+        arr = a; break;
+      }
+      case 4: { // NC_INT
+        const a = new Int32Array(count);
+        for (let i = 0; i < count; i++) a[i] = this._i32();
+        arr = a; break;
+      }
+      case 5: { // NC_FLOAT
+        const a = new Float32Array(count);
+        for (let i = 0; i < count; i++) a[i] = this._f32();
+        arr = a; break;
+      }
+      case 6: { // NC_DOUBLE
+        const a = new Float64Array(count);
+        for (let i = 0; i < count; i++) a[i] = this._f64();
+        arr = a; break;
+      }
+      default:
+        throw new Error(`Unknown NC type: ${type}`);
+    }
+    this._align4();
+    return arr;
+  }
+
+  _typeSize(type) {
+    return [0, 1, 1, 2, 4, 4, 8][type];
+  }
+
+  _readAttList() {
+    const tag = this._u32();
+    if (tag !== 0 && tag !== 12) throw new Error(`Bad att tag: ${tag}`);
+    const count = this._u32();
+    const attrs = [];
+    for (let i = 0; i < count; i++) {
+      const nlen = this._u32();
+      const name = this._string(nlen);
+      const type = this._u32();
+      const vlen = this._u32();
+      const values = this._readValues(type, vlen);
+      let value;
+      if (type === 2) { // NC_CHAR → string
+        value = String.fromCharCode(...values).replace(/\0/g, '').trim();
+      } else if (vlen === 1) {
+        value = values[0];
+      } else {
+        value = Array.from(values);
+      }
+      attrs.push({ name, value });
+    }
+    return attrs;
+  }
+
+  _parse() {
+    // Magic
+    const magic = String.fromCharCode(
+      this._u8(), this._u8(), this._u8()
+    );
+    if (magic !== 'CDF') throw new Error('Not a NetCDF Classic file (bad magic)');
+    const version = this._u8(); // 1 = classic, 2 = 64-bit offset
+    this._version = version;
+
+    // numrecs
+    this._numrecs = this._u32();
+
+    // dim_list
+    const dimTag = this._u32();
+    if (dimTag !== 0 && dimTag !== 10) throw new Error(`Bad dim tag: ${dimTag}`);
+    const dimCount = this._u32();
+    this.dimensions = [];
+    for (let i = 0; i < dimCount; i++) {
+      const nlen = this._u32();
+      const name = this._string(nlen);
+      const size = this._u32();
+      this.dimensions.push({ name, size });
+    }
+
+    // global att_list
+    this.globalAttributes = this._readAttList();
+
+    // var_list
+    const varTag = this._u32();
+    if (varTag !== 0 && varTag !== 11) throw new Error(`Bad var tag: ${varTag}`);
+    const varCount = this._u32();
+    this.variables = [];
+    for (let i = 0; i < varCount; i++) {
+      const nlen = this._u32();
+      const name = this._string(nlen);
+      const dimCount2 = this._u32();
+      const dimIds = [];
+      for (let d = 0; d < dimCount2; d++) dimIds.push(this._u32());
+      const dimNames = dimIds.map(id => this.dimensions[id]?.name ?? `dim${id}`);
+      const attributes = this._readAttList();
+      const type = this._u32();
+      const vsize = this._u32(); // size in bytes of one record (or whole var)
+      // offset: 4 bytes in v1, 8 bytes in v2
+      const offset = version === 2
+        ? (this._u32() * 4294967296 + this._u32())
+        : this._u32();
+      this.variables.push({ name, dimensions: dimNames, dimIds, attributes, type, vsize, offset });
+    }
+  }
+
+  getDataVariable(name) {
+    const v = this.variables.find(x => x.name === name);
+    if (!v) throw new Error(`Variable not found: ${name}`);
+
+    // Total element count
+    const sizes = v.dimIds.map(id => this.dimensions[id]?.size ?? 1);
+    const totalElements = sizes.reduce((a, b) => a * b, 1) || 1;
+
+    // Save position, seek to var data
+    const savedPos = this._pos;
+    this._pos = v.offset;
+    const data = this._readValues(v.type, totalElements);
+    this._pos = savedPos;
+
+    return data;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════
+const state = {
+  reader: null,
+  variables: [],
+  currentVar: null,
+  dims: {},           // { dimName: index }
+  latName: null,
+  lonName: null,
+  timeName: null,
+  data2d: null,
+  lats: null,
+  lons: null,
+  timeValues: null,
+  vmin: null,
+  vmax: null,
+  animTimer: null,
+  selectedCell: null,
+  currentCmap: 'viridis',
+};
+
+// ═══════════════════════════════════════════════════════
+//  DOM refs
+// ═══════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const dropZone     = $('drop-zone');
+const fileInput    = $('file-input');
+const varSelect    = $('var-select');
+const cmapSelect   = $('cmap-select');
+const vminInput    = $('vmin-input');
+const vmaxInput    = $('vmax-input');
+const animBtn      = $('animate-btn');
+const welcome      = $('welcome');
+const viewer       = $('viewer');
+const topbarVar    = $('topbar-var');
+const topbarDims   = $('topbar-dims');
+const tsEmpty      = $('ts-empty');
+const tsChart      = $('ts-chart');
+const loadingOverlay = $('loading-overlay');
+const loadingMsg   = $('loading-msg');
+const toast        = $('toast');
+
+// ═══════════════════════════════════════════════════════
+//  Map
+// ═══════════════════════════════════════════════════════
+let map = null;
+let heatLayer = null; // canvas overlay
+let clickMarker = null;
+
+function initMap() {
+  if (map) return;
+  map = L.map('map', { zoomControl: true, attributionControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18,
+  }).addTo(map);
+}
+
+// ═══════════════════════════════════════════════════════
+//  File handling
+// ═══════════════════════════════════════════════════════
+$('browse-link').addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('click', e => { if (e.target !== $('browse-link')) fileInput.click(); });
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+function formatSize(bytes) {
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function loadFile(file) {
+  if (!file.name.match(/\.nc$/i)) {
+    showToast('Please open a .nc (NetCDF) file.'); return;
+  }
+  if (file.size > 300 * 1024 * 1024) {
+    showToast('File is over 300 MB — it may be slow or crash. Proceed carefully.', 6000);
+  }
+
+  $('badge-name').textContent = file.name;
+  $('badge-size').textContent = formatSize(file.size);
+  $('file-badge').style.display = 'flex';
+
+  showLoading('Parsing file…');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const nc = new NetCDFReader(e.target.result);
+      state.reader = nc;
+      processNetCDF(nc);
+    } catch(err) {
+      hideLoading();
+      showToast('Could not parse file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════════════════════════════════════════════
+//  NetCDF processing
+// ═══════════════════════════════════════════════════════
+const LAT_NAMES  = ['lat', 'latitude', 'y', 'nav_lat', 'XLAT'];
+const LON_NAMES  = ['lon', 'longitude', 'x', 'nav_lon', 'XLONG'];
+const TIME_NAMES = ['time', 'Time', 't', 'TIME'];
+
+function guessAxis(name, units) {
+  const n = name.toLowerCase();
+  const u = (units || '').toLowerCase();
+  if (LAT_NAMES.some(l => n.includes(l.toLowerCase())) || u.includes('degree') && u.includes('north')) return 'lat';
+  if (LON_NAMES.some(l => n.includes(l.toLowerCase())) || u.includes('degree') && u.includes('east')) return 'lon';
+  if (TIME_NAMES.some(t => n === t.toLowerCase()) || u.includes('since')) return 'time';
+  return null;
+}
+
+function processNetCDF(nc) {
+  // Identify dimensions
+  const dims = nc.dimensions; // [{name, size}]
+  const vars = nc.variables;  // [{name, dimensions, attributes, ...}]
+
+  state.latName = null;
+  state.lonName = null;
+  state.timeName = null;
+
+  // Scan 1-D coordinate variables
+  for (const v of vars) {
+    if (v.dimensions.length !== 1) continue;
+    const units = (v.attributes.find(a => a.name === 'units') || {}).value || '';
+    const axis  = (v.attributes.find(a => a.name === 'axis') || {}).value || '';
+    const guess = guessAxis(v.name, units);
+
+    if (!state.latName  && (guess === 'lat'  || axis === 'Y')) state.latName  = v.name;
+    if (!state.lonName  && (guess === 'lon'  || axis === 'X')) state.lonName  = v.name;
+    if (!state.timeName && (guess === 'time' || axis === 'T')) state.timeName = v.name;
+  }
+
+  // Fallback: check dimension names
+  if (!state.latName)  { const d = dims.find(d => guessAxis(d.name, '') === 'lat');  if (d) state.latName  = d.name; }
+  if (!state.lonName)  { const d = dims.find(d => guessAxis(d.name, '') === 'lon');  if (d) state.lonName  = d.name; }
+  if (!state.timeName) { const d = dims.find(d => guessAxis(d.name, '') === 'time'); if (d) state.timeName = d.name; }
+
+  if (!state.latName || !state.lonName) {
+    hideLoading();
+    showToast('Could not identify lat/lon dimensions. Check your file.');
+    return;
+  }
+
+  // Read coordinate arrays
+  state.lats = Array.from(tryRead(nc, state.latName));
+  state.lons = Array.from(tryRead(nc, state.lonName));
+  state.timeValues = state.timeName ? Array.from(tryRead(nc, state.timeName)) : null;
+
+  // Filter data variables (2D+ with lat/lon dims)
+  const latDim = state.latName;
+  const lonDim = state.lonName;
+  state.variables = vars.filter(v => {
+    const dn = v.dimensions;
+    return dn.length >= 2 && dn.includes(latDim) && dn.includes(lonDim)
+      && v.name !== state.latName && v.name !== state.lonName && v.name !== state.timeName;
+  });
+
+  if (state.variables.length === 0) {
+    hideLoading();
+    showToast('No suitable 2D+ variables with lat/lon found in this file.');
+    return;
+  }
+
+  // Populate variable selector
+  varSelect.innerHTML = '';
+  for (const v of state.variables) {
+    const longName = (v.attributes.find(a => a.name === 'long_name') || {}).value || '';
+    const units = (v.attributes.find(a => a.name === 'units') || {}).value || '';
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    opt.textContent = v.name + (longName ? ' — ' + longName : '');
+    opt.dataset.units = units;
+    opt.dataset.longName = longName;
+    varSelect.appendChild(opt);
+  }
+
+  varSelect.disabled = false;
+  cmapSelect.disabled = false;
+  vminInput.disabled = false;
+  vmaxInput.disabled = false;
+
+  // Build metadata panel
+  buildMeta(nc);
+  $('meta-section').style.display = '';
+
+  // Show viewer
+  welcome.style.display = 'none';
+  viewer.style.display = 'flex';
+  initMap();
+
+  selectVariable(state.variables[0].name);
+}
+
+function tryRead(nc, name) {
+  try { return nc.getDataVariable(name); } catch { return []; }
+}
+
+function selectVariable(varName) {
+  state.currentVar = varName;
+  state.selectedCell = null;
+  tsEmpty.style.display = 'flex';
+  tsChart.style.display = 'none';
+  if (clickMarker) { map.removeLayer(clickMarker); clickMarker = null; }
+
+  const v = state.variables.find(x => x.name === varName);
+  if (!v) return;
+
+  // Build dim sliders for non-lat/lon dims
+  const otherDims = v.dimensions.filter(d => d !== state.latName && d !== state.lonName);
+  state.dims = {};
+  for (const d of otherDims) state.dims[d] = 0;
+
+  buildDimControls(v, otherDims);
+  updateAnimBtn();
+  renderMap();
+}
+
+function buildDimControls(v, otherDims) {
+  const container = $('dim-ctrls');
+  container.innerHTML = '';
+  if (otherDims.length === 0) return;
+
+  for (const dimName of otherDims) {
+    const dimSize = state.reader.dimensions.find(d => d.name === dimName)?.size || 1;
+    const isTime = dimName === state.timeName;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ctrl-row';
+    wrap.dataset.dim = dimName;
+
+    const label = document.createElement('label');
+    label.className = 'ctrl-label';
+    label.textContent = isTime ? '⏱ Time step' : `📐 ${dimName}`;
+    wrap.appendChild(label);
+
+    const sliderWrap = document.createElement('div');
+    sliderWrap.className = 'slider-wrap';
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = 0;
+    slider.max = dimSize - 1;
+    slider.value = 0;
+    slider.dataset.dim = dimName;
+
+    const valSpan = document.createElement('span');
+    valSpan.className = 'slider-val';
+    valSpan.textContent = formatDimValue(dimName, 0);
+
+    slider.addEventListener('input', () => {
+      const idx = parseInt(slider.value);
+      state.dims[dimName] = idx;
+      valSpan.textContent = formatDimValue(dimName, idx);
+      renderMap();
+    });
+
+    sliderWrap.appendChild(slider);
+    sliderWrap.appendChild(valSpan);
+    wrap.appendChild(sliderWrap);
+    container.appendChild(wrap);
+  }
+}
+
+function formatDimValue(dimName, idx) {
+  if (dimName === state.timeName && state.timeValues && state.timeValues[idx] !== undefined) {
+    const val = state.timeValues[idx];
+    // Try to detect and format time units
+    const tv = state.reader.variables.find(v => v.name === state.timeName);
+    const units = tv ? (tv.attributes.find(a => a.name === 'units') || {}).value || '' : '';
+    if (units.includes('since')) {
+      // Parse CF time
+      const formatted = parseCFTime(val, units);
+      if (formatted) return formatted;
+    }
+    return val.toFixed ? val.toFixed(1) : String(val);
+  }
+  return String(idx);
+}
+
+function parseCFTime(value, units) {
+  try {
+    const m = units.match(/(\w+)\s+since\s+([\d\-T:Z ]+)/i);
+    if (!m) return null;
+    const [, unit, origin] = m;
+    const base = new Date(origin.trim());
+    if (isNaN(base)) return null;
+    const msMap = { seconds: 1e3, minutes: 6e4, hours: 3.6e6, days: 86.4e6 };
+    const key = Object.keys(msMap).find(k => unit.toLowerCase().startsWith(k.slice(0,-1)));
+    if (!key) return null;
+    const dt = new Date(base.getTime() + value * msMap[key]);
+    return dt.toISOString().slice(0, 10);
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════════════════════
+//  Rendering
+// ═══════════════════════════════════════════════════════
+function extractSlice(varName) {
+  const v = state.variables.find(x => x.name === varName);
+  if (!v) return null;
+
+  const reader = state.reader;
+  const flat = Array.from(tryRead(reader, varName));
+  const dims  = v.dimensions;
+  const sizes = dims.map(d => reader.dimensions.find(x => x.name === d)?.size || 1);
+
+  const latIdx = dims.indexOf(state.latName);
+  const lonIdx = dims.indexOf(state.lonName);
+  const nLat   = sizes[latIdx];
+  const nLon   = sizes[lonIdx];
+
+  // Get fill / scale attributes
+  const attrVal = name => {
+    const a = v.attributes.find(x => x.name === name);
+    return a ? a.value : null;
+  };
+  const fillValue  = attrVal('_FillValue') ?? attrVal('missing_value');
+  const scaleFactor = attrVal('scale_factor') ?? 1;
+  const addOffset  = attrVal('add_offset') ?? 0;
+
+  // Build offset lookup for fixed other dims
+  function flatIndex(latI, lonI) {
+    const idx = [];
+    for (let d = 0; d < dims.length; d++) {
+      if (dims[d] === state.latName) idx.push(latI);
+      else if (dims[d] === state.lonName) idx.push(lonI);
+      else idx.push(state.dims[dims[d]] || 0);
+    }
+    let fi = 0;
+    let stride = 1;
+    for (let d = dims.length - 1; d >= 0; d--) {
+      fi += idx[d] * stride;
+      stride *= sizes[d];
+    }
+    return fi;
+  }
+
+  const grid = [];
+  for (let i = 0; i < nLat; i++) {
+    const row = [];
+    for (let j = 0; j < nLon; j++) {
+      let val = flat[flatIndex(i, j)];
+      if (fillValue !== null && val === fillValue) { row.push(NaN); continue; }
+      val = val * scaleFactor + addOffset;
+      row.push(val);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+function computeMinMax(grid) {
+  let mn = Infinity, mx = -Infinity;
+  for (const row of grid) for (const v of row) {
+    if (!isNaN(v) && isFinite(v)) { if (v < mn) mn = v; if (v > mx) mx = v; }
+  }
+  return [mn, mx];
+}
+
+const CHROMA_CMAPS = {
+  viridis: ['#440154','#482878','#3e4a89','#31688e','#26838f','#1f9d89','#35b779','#6ece58','#b5de2b','#fde725'],
+  plasma:  ['#0d0887','#5302a3','#8b0aa5','#b83289','#db5c68','#f48849','#febc2a','#f0f921'],
+  RdBu:    ['#67001f','#b2182b','#d6604d','#f4a582','#fddbc7','#f7f7f7','#d1e5f0','#92c5de','#4393c3','#2166ac','#053061'],
+  RdYlGn:  ['#a50026','#d73027','#f46d43','#fdae61','#fee08b','#ffffbf','#d9ef8b','#a6d96a','#66bd63','#1a9850','#006837'],
+  coolwarm:['#3b4cc0','#6788ee','#9abbff','#c9d8ef','#edd1c2','#f7a789','#e26952','#b40426'],
+  YlOrRd:  ['#ffffcc','#ffeda0','#fed976','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#bd0026','#800026'],
+  Spectral:['#9e0142','#d53e4f','#f46d43','#fdae61','#fee08b','#ffffbf','#e6f598','#abdda4','#66c2a5','#3288bd','#5e4fa2'],
+  Blues:   ['#f7fbff','#deebf7','#c6dbef','#9ecae1','#6baed6','#4292c6','#2171b5','#08519c','#08306b'],
+};
+
+function getColorScale(cmapName, n = 256) {
+  const stops = CHROMA_CMAPS[cmapName] || CHROMA_CMAPS.viridis;
+  return chroma.scale(stops).mode('lab').colors(n);
+}
+
+function valueToColor(val, mn, mx, scale) {
+  if (isNaN(val) || !isFinite(val)) return null;
+  const t = Math.max(0, Math.min(1, (val - mn) / (mx - mn)));
+  const idx = Math.round(t * (scale.length - 1));
+  return scale[idx];
+}
+
+// Canvas overlay
+let canvasOverlay = null;
+
+function renderMap() {
+  const varName = state.currentVar;
+  if (!varName) return;
+  showLoading('Rendering…');
+
+  setTimeout(() => { // allow UI to update
+    try {
+      const grid = extractSlice(varName);
+      if (!grid) { hideLoading(); return; }
+      state.data2d = grid;
+
+      const [autoMin, autoMax] = computeMinMax(grid);
+      const mn = parseFloat(vminInput.value) || autoMin;
+      const mx = parseFloat(vmaxInput.value) || autoMax;
+      state.vmin = mn; state.vmax = mx;
+
+      const cmap = cmapSelect.value;
+      state.currentCmap = cmap;
+      const scale = getColorScale(cmap);
+
+      const lats = state.lats;
+      const lons = state.lons;
+      const nLat = lats.length;
+      const nLon = lons.length;
+
+      // Remove old overlay
+      if (canvasOverlay) { map.removeLayer(canvasOverlay); canvasOverlay = null; }
+
+      // Determine bounds
+      const latMin = Math.min(...lats), latMax = Math.max(...lats);
+      const lonMin = Math.min(...lons), lonMax = Math.max(...lons);
+      const bounds = [[latMin, lonMin], [latMax, lonMax]];
+
+      // Draw to offscreen canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = nLon; canvas.height = nLat;
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.createImageData(nLon, nLat);
+
+      // Flip lat if needed (netCDF often stores top-to-bottom)
+      const latFlipped = lats[0] > lats[lats.length - 1];
+
+      for (let i = 0; i < nLat; i++) {
+        const rowIdx = latFlipped ? i : (nLat - 1 - i);
+        for (let j = 0; j < nLon; j++) {
+          const val = grid[rowIdx][j];
+          const color = valueToColor(val, mn, mx, scale);
+          const px = (i * nLon + j) * 4;
+          if (color) {
+            const rgb = chroma(color).rgb();
+            imgData.data[px]   = rgb[0];
+            imgData.data[px+1] = rgb[1];
+            imgData.data[px+2] = rgb[2];
+            imgData.data[px+3] = 200;
+          } else {
+            imgData.data[px+3] = 0;
+          }
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      const dataUrl = canvas.toDataURL();
+      canvasOverlay = L.imageOverlay(dataUrl, bounds, { opacity: 0.85 }).addTo(map);
+      map.fitBounds(bounds);
+
+      // Update colorbar
+      updateColorbar(cmap, mn, mx, varName);
+
+      // Update topbar
+      const v = state.variables.find(x => x.name === varName);
+      const longName = v ? (v.attributes.find(a => a.name === 'long_name') || {}).value : '';
+      topbarVar.textContent = varName + (longName ? ' (' + longName + ')' : '');
+      topbarDims.textContent = `${nLat}×${nLon} grid`;
+
+      // Map click handler
+      map.off('click');
+      map.on('click', e => onMapClick(e, grid, lats, lons, mn, mx));
+
+      hideLoading();
+    } catch(err) {
+      hideLoading();
+      showToast('Render error: ' + err.message);
+      console.error(err);
+    }
+  }, 30);
+}
+
+function onMapClick(e, grid, lats, lons, mn, mx) {
+  const {lat, lng} = e.latlng;
+
+  // Find nearest grid cell
+  const latI = nearestIdx(lats, lat);
+  const lonI = nearestIdx(lons, lng);
+  if (latI < 0 || lonI < 0) return;
+
+  state.selectedCell = {latI, lonI, lat: lats[latI], lon: lons[lonI]};
+
+  // Marker
+  if (clickMarker) map.removeLayer(clickMarker);
+  clickMarker = L.circleMarker([lats[latI], lons[lonI]], {
+    radius: 6, color: '#fff', fillColor: '#4f8ef7', fillOpacity: 0.9, weight: 2
+  }).addTo(map);
+
+  const val = grid[latI][lonI];
+  const v = state.variables.find(x => x.name === state.currentVar);
+  const units = v ? (v.attributes.find(a => a.name === 'units') || {}).value || '' : '';
+  clickMarker.bindPopup(
+    `<b>${state.currentVar}</b>: ${isNaN(val) ? 'N/A' : val.toFixed(3)} ${units}<br>
+     Lat: ${lats[latI].toFixed(3)}, Lon: ${lons[lonI].toFixed(3)}`
+  ).openPopup();
+
+  plotTimeSeries(latI, lonI);
+}
+
+function nearestIdx(arr, val) {
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < arr.length; i++) {
+    const d = Math.abs(arr[i] - val);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Time series
+// ═══════════════════════════════════════════════════════
+function plotTimeSeries(latI, lonI) {
+  const varName = state.currentVar;
+  const v = state.variables.find(x => x.name === varName);
+  if (!v) return;
+
+  if (!state.timeName || !v.dimensions.includes(state.timeName)) {
+    tsEmpty.textContent = 'ℹ️ This variable has no time dimension.';
+    tsEmpty.style.display = 'flex';
+    tsChart.style.display = 'none';
+    return;
+  }
+
+  const reader = state.reader;
+  const flat = Array.from(tryRead(reader, varName));
+  const dims  = v.dimensions;
+  const sizes = dims.map(d => reader.dimensions.find(x => x.name === d)?.size || 1);
+  const nTime = reader.dimensions.find(d => d.name === state.timeName)?.size || 1;
+
+  const attrVal = name => {
+    const a = v.attributes.find(x => x.name === name);
+    return a ? a.value : null;
+  };
+  const fillValue   = attrVal('_FillValue') ?? attrVal('missing_value');
+  const scaleFactor = attrVal('scale_factor') ?? 1;
+  const addOffset   = attrVal('add_offset') ?? 0;
+  const units       = attrVal('units') || '';
+  const longName    = attrVal('long_name') || varName;
+
+  function flatIndex(tI) {
+    const idx = [];
+    for (let d = 0; d < dims.length; d++) {
+      if (dims[d] === state.timeName)  idx.push(tI);
+      else if (dims[d] === state.latName) idx.push(latI);
+      else if (dims[d] === state.lonName) idx.push(lonI);
+      else idx.push(state.dims[dims[d]] || 0);
+    }
+    let fi = 0, stride = 1;
+    for (let d = dims.length - 1; d >= 0; d--) { fi += idx[d] * stride; stride *= sizes[d]; }
+    return fi;
+  }
+
+  const xVals = [], yVals = [];
+  const tv = reader.variables.find(vv => vv.name === state.timeName);
+  const timeUnits = tv ? (tv.attributes.find(a => a.name === 'units') || {}).value || '' : '';
+
+  for (let t = 0; t < nTime; t++) {
+    let val = flat[flatIndex(t)];
+    if (fillValue !== null && val === fillValue) { xVals.push(t); yVals.push(null); continue; }
+    val = val * scaleFactor + addOffset;
+
+    if (state.timeValues) {
+      const tv2 = state.timeValues[t];
+      const fmt = parseCFTime(tv2, timeUnits);
+      xVals.push(fmt || tv2);
+    } else {
+      xVals.push(t);
+    }
+    yVals.push(val);
+  }
+
+  tsEmpty.style.display = 'none';
+  tsChart.style.display = 'block';
+
+  const lat = state.lats[latI], lon = state.lons[lonI];
+  $('ts-title').innerHTML =
+    `Time Series — <span>${longName}</span> at (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+
+  Plotly.react(tsChart, [{
+    x: xVals,
+    y: yVals,
+    type: 'scatter',
+    mode: 'lines+markers',
+    line: { color: '#4f8ef7', width: 2 },
+    marker: { color: '#7c5cfc', size: 4 },
+    hovertemplate: `<b>%{x}</b><br>${longName}: %{y:.3f} ${units}<extra></extra>`,
+  }], {
+    paper_bgcolor: '#1a1d27',
+    plot_bgcolor:  '#1a1d27',
+    font: { color: '#e8eaf6', size: 11 },
+    margin: { t: 8, r: 16, b: 40, l: 55 },
+    xaxis: {
+      gridcolor: '#2e3250',
+      zerolinecolor: '#2e3250',
+      tickfont: { size: 10 },
+    },
+    yaxis: {
+      gridcolor: '#2e3250',
+      zerolinecolor: '#2e3250',
+      title: { text: `${longName} (${units})`, font: { size: 10 } },
+      tickfont: { size: 10 },
+    },
+    hoverlabel: { bgcolor: '#22263a', bordercolor: '#4f8ef7', font: { size: 11 } },
+    showlegend: false,
+  }, { responsive: true, displayModeBar: false });
+}
+
+// ═══════════════════════════════════════════════════════
+//  Colorbar
+// ═══════════════════════════════════════════════════════
+function updateColorbar(cmap, mn, mx, varName) {
+  const wrap = $('colorbar-wrap');
+  wrap.style.display = 'block';
+
+  const v = state.variables.find(x => x.name === varName);
+  const units = v ? (v.attributes.find(a => a.name === 'units') || {}).value || '' : '';
+  $('colorbar-title').textContent = `${varName}${units ? ' (' + units + ')' : ''}`;
+
+  const stops = CHROMA_CMAPS[cmap] || CHROMA_CMAPS.viridis;
+  const gradient = `linear-gradient(to right, ${stops.join(',')})`;
+  $('colorbar-gradient').style.background = gradient;
+  $('cb-min').textContent = mn.toFixed(2);
+  $('cb-max').textContent = mx.toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════════
+//  Metadata
+// ═══════════════════════════════════════════════════════
+function buildMeta(nc) {
+  const table = $('meta-table');
+  table.innerHTML = '';
+
+  const rows = [];
+  // Global attributes
+  for (const a of (nc.globalAttributes || [])) {
+    rows.push([a.name, String(a.value).slice(0, 120)]);
+  }
+  // Dimensions
+  for (const d of nc.dimensions) {
+    rows.push([`dim: ${d.name}`, `${d.size} steps`]);
+  }
+
+  for (const [k, v] of rows) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${k}</td><td>${v}</td>`;
+    table.appendChild(tr);
+  }
+
+  $('meta-btn').addEventListener('click', function() {
+    this.classList.toggle('open');
+    $('meta-content').classList.toggle('open');
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  Animation
+// ═══════════════════════════════════════════════════════
+function updateAnimBtn() {
+  const v = state.variables.find(x => x.name === state.currentVar);
+  const hasTime = v && state.timeName && v.dimensions.includes(state.timeName);
+  animBtn.disabled = !hasTime;
+}
+
+animBtn.addEventListener('click', () => {
+  if (state.animTimer) {
+    clearInterval(state.animTimer);
+    state.animTimer = null;
+    animBtn.textContent = '▶ Animate time steps';
+    animBtn.classList.remove('playing');
+  } else {
+    const v = state.variables.find(x => x.name === state.currentVar);
+    if (!v) return;
+    const nTime = state.reader.dimensions.find(d => d.name === state.timeName)?.size || 1;
+    animBtn.textContent = '⏹ Stop animation';
+    animBtn.classList.add('playing');
+    state.animTimer = setInterval(() => {
+      const cur = state.dims[state.timeName] || 0;
+      const next = (cur + 1) % nTime;
+      state.dims[state.timeName] = next;
+      // Update slider
+      const slider = document.querySelector(`input[data-dim="${state.timeName}"]`);
+      if (slider) {
+        slider.value = next;
+        const valSpan = slider.nextElementSibling;
+        if (valSpan) valSpan.textContent = formatDimValue(state.timeName, next);
+      }
+      renderMap();
+    }, 500);
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  Event listeners
+// ═══════════════════════════════════════════════════════
+varSelect.addEventListener('change', () => {
+  if (state.animTimer) { clearInterval(state.animTimer); state.animTimer = null; animBtn.textContent = '▶ Animate time steps'; animBtn.classList.remove('playing'); }
+  selectVariable(varSelect.value);
+});
+
+cmapSelect.addEventListener('change', () => { if (state.currentVar) renderMap(); });
+vminInput.addEventListener('change', () => { if (state.currentVar) renderMap(); });
+vmaxInput.addEventListener('change', () => { if (state.currentVar) renderMap(); });
+
+// ═══════════════════════════════════════════════════════
+//  Resize handle
+// ═══════════════════════════════════════════════════════
+const resizeHandle = $('resize-handle');
+let isResizing = false;
+resizeHandle.addEventListener('mousedown', e => { isResizing = true; e.preventDefault(); });
+document.addEventListener('mousemove', e => {
+  if (!isResizing) return;
+  const main = $('main');
+  const mainRect = main.getBoundingClientRect();
+  const totalH = mainRect.height;
+  const topBarH = $('topbar').offsetHeight;
+  const tsHeader = $('ts-header').offsetHeight;
+  const fromBottom = mainRect.bottom - e.clientY;
+  const clamped = Math.max(120, Math.min(totalH - topBarH - 60, fromBottom));
+  $('ts-panel').style.height = clamped + 'px';
+  $('ts-panel').style.minHeight = clamped + 'px';
+  if (tsChart.style.display !== 'none') Plotly.Plots.resize(tsChart);
+});
+document.addEventListener('mouseup', () => { isResizing = false; });
+
+// ═══════════════════════════════════════════════════════
+//  Helpers
+// ═══════════════════════════════════════════════════════
+function showLoading(msg) {
+  loadingMsg.textContent = msg;
+  loadingOverlay.classList.add('show');
+}
+function hideLoading() { loadingOverlay.classList.remove('show'); }
+
+let toastTimer = null;
+function showToast(msg, duration = 4500) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+}
+</script>
+</body>
+</html>
