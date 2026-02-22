@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vibed-tools</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f0f6fc;
+    }
+
+    header p {
+      margin-top: 0.6rem;
+      color: #8b949e;
+      font-size: 1rem;
+    }
+
+    .table-wrapper {
+      width: 100%;
+      max-width: 860px;
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid #30363d;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    thead tr {
+      background: #161b22;
+    }
+
+    thead th {
+      padding: 0.85rem 1.2rem;
+      text-align: left;
+      font-weight: 600;
+      color: #8b949e;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid #30363d;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #21262d;
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #161b22;
+    }
+
+    td {
+      padding: 1rem 1.2rem;
+      vertical-align: top;
+    }
+
+    td.name {
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    td.name a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+
+    td.name a:hover {
+      text-decoration: underline;
+    }
+
+    td.badge {
+      white-space: nowrap;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.2em 0.6em;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: #1f6feb33;
+      color: #58a6ff;
+      border: 1px solid #1f6feb66;
+    }
+
+    td.desc {
+      color: #8b949e;
+      line-height: 1.5;
+    }
+
+    footer {
+      margin-top: 3rem;
+      color: #484f58;
+      font-size: 0.82rem;
+    }
+
+    footer a {
+      color: #484f58;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>vibed-tools</h1>
+    <p>A collection of browser-based interactive tools — no install required.</p>
+  </header>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Category</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name"><a href="bird-guessing.html">Knowledge Tree</a></td>
+          <td class="badge"><span class="tag">Learning</span></td>
+          <td class="desc">
+            Gamified flashcard and quiz system for memorising hierarchical
+            knowledge. Supports custom categories, fuzzy-match answer checking,
+            mastery tracking, images, and GBIF species lookup. Data is stored
+            locally in the browser and can be imported/exported as JSON.
+          </td>
+        </tr>
+        <tr>
+          <td class="name"><a href="netcdf-viewer.html">NetCDF Climate Viewer</a></td>
+          <td class="badge"><span class="tag">Science</span></td>
+          <td class="desc">
+            Drag-and-drop viewer for NetCDF Classic (v3) climate files.
+            Renders gridded data on an interactive Leaflet map with a
+            customisable colour scale, supports time-series plots via Plotly,
+            and lets you slice across any dimension (time, latitude, longitude)
+            directly in the browser — no server needed.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    <a href="https://github.com/grajekf/vibed-tools">github.com/grajekf/vibed-tools</a>
+  </footer>
+</body>
+</html>
