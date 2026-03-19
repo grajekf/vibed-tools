@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTML Viewer &amp; Formatter</title>
+
+  <!-- CodeMirror 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/theme/material-darker.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/fold/foldgutter.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/search/matchesonscrollbar.css" />
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/xml/xml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/css/css.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/fold/foldcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/fold/foldgutter.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/fold/xml-fold.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/search/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/search/searchcursor.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/search/matchesonscrollbar.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/scroll/annotatescrollbar.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/dialog/dialog.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/dialog/dialog.css" />
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/edit/matchtags.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/edit/closetag.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/addon/edit/closebrackets.min.js"></script>
+
+  <!-- js-beautify -->
+  <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify-css.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify-html.min.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #1c2129;
+      --bg-hover: #21262d;
+      --border: #30363d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #484f58;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --green: #3fb950;
+      --orange: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --toolbar-height: 48px;
+      --tab-height: 38px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      height: var(--toolbar-height);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 12px;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    .toolbar-sep {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      margin: 0 6px;
+    }
+
+    .btn {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--bg-hover); }
+    .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .toolbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status {
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 0 8px;
+    }
+
+    /* ── Split layout ── */
+    .split-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 100px;
+      overflow: hidden;
+    }
+    .pane-left { flex: 1; }
+    .pane-right { flex: 1; }
+
+    .gutter {
+      width: 5px;
+      background: var(--border);
+      cursor: col-resize;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .gutter:hover, .gutter.dragging { background: var(--accent); }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      height: var(--tab-height);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      padding: 0 8px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .tab {
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      transition: color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active {
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      border-color: var(--border);
+    }
+
+    .tab-content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .tab-panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: auto;
+    }
+    .tab-panel.active { display: block; }
+
+    /* ── CodeMirror overrides ── */
+    .editor-wrap {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .editor-wrap .CodeMirror {
+      position: absolute;
+      inset: 0;
+      height: auto;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+      font-size: 13px;
+    }
+
+    /* ── Preview iframe ── */
+    #preview-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    /* ── DOM Tree ── */
+    .dom-tree {
+      padding: 12px;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .tree-node { padding-left: 20px; }
+    .tree-toggle {
+      cursor: pointer;
+      user-select: none;
+    }
+    .tree-toggle::before {
+      content: "\25B8 ";
+      color: var(--text-muted);
+      display: inline-block;
+      width: 14px;
+    }
+    .tree-toggle.open::before { content: "\25BE "; }
+    .tree-tag { color: var(--accent); }
+    .tree-attr-name { color: var(--purple); }
+    .tree-attr-val { color: var(--green); }
+    .tree-text { color: var(--text-secondary); font-style: italic; }
+    .tree-comment { color: var(--text-muted); font-style: italic; }
+    .tree-children { display: none; }
+    .tree-toggle.open + .tree-children { display: block; }
+
+    /* ── Drop overlay ── */
+    .drop-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(88, 166, 255, 0.08);
+      border: 3px dashed var(--accent);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--accent);
+      pointer-events: none;
+    }
+    .drop-overlay.visible { display: flex; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--text-primary);
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Pane labels ── */
+    .pane-label {
+      height: var(--tab-height);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    /* ── Validation panel ── */
+    .validation-list {
+      padding: 12px;
+      font-size: 12px;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+    .validation-item {
+      padding: 4px 0;
+      display: flex;
+      gap: 8px;
+    }
+    .validation-item.error { color: var(--red); }
+    .validation-item.warning { color: var(--orange); }
+    .validation-item.ok { color: var(--green); }
+
+    /* ── Hidden file input ── */
+    #file-input { display: none; }
+
+  </style>
+</head>
+<body>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="toolbar-title">HTML Viewer &amp; Formatter</span>
+    <div class="toolbar-sep"></div>
+    <button class="btn" id="btn-open" title="Open file">Open</button>
+<button class="btn" id="btn-beautify" title="Beautify HTML">Beautify</button>
+    <button class="btn" id="btn-minify" title="Minify HTML">Minify</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn" id="btn-copy" title="Copy formatted HTML">Copy</button>
+    <button class="btn" id="btn-wrap" title="Toggle word wrap">Wrap</button>
+    <div class="toolbar-right">
+      <span class="status" id="status"></span>
+    </div>
+    <input type="file" id="file-input" accept=".html,.htm,.xhtml,.svg,.xml" />
+  </div>
+
+  <!-- Main split -->
+  <div class="split-container">
+    <!-- Left pane: input editor -->
+    <div class="pane pane-left">
+      <div class="pane-label">Input</div>
+      <div class="editor-wrap" id="editor-input"></div>
+    </div>
+
+    <div class="gutter" id="gutter"></div>
+
+    <!-- Right pane: tabbed output -->
+    <div class="pane pane-right">
+      <div class="tab-bar">
+        <div class="tab active" data-tab="preview">Preview</div>
+        <div class="tab" data-tab="dom-tree">DOM Tree</div>
+        <div class="tab" data-tab="validate">Validate</div>
+      </div>
+      <div class="tab-content">
+        <div class="tab-panel active" id="panel-preview">
+          <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
+        </div>
+        <div class="tab-panel" id="panel-dom-tree">
+          <div class="dom-tree" id="dom-tree"></div>
+        </div>
+        <div class="tab-panel" id="panel-validate">
+          <div class="validation-list" id="validate-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drop overlay -->
+  <div class="drop-overlay" id="drop-overlay">Drop HTML file here</div>
+
+<!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── Sample HTML ──
+    var sampleHTML = '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>Hello World</title>\n  <style>\n    body { font-family: sans-serif; margin: 2rem; }\n    h1 { color: #333; }\n  </style>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n  <p>Paste or drop your HTML here.</p>\n  <script>\n    console.log("It works!");\n  <\/script>\n</body>\n</html>';
+
+    // ── Shared CM config ──
+    var cmDefaults = {
+      mode: "htmlmixed",
+      theme: "material-darker",
+      lineNumbers: true,
+      foldGutter: true,
+      gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+      matchBrackets: true,
+      matchTags: { bothTags: true },
+      autoCloseTags: true,
+      autoCloseBrackets: true,
+      lineWrapping: true,
+      tabSize: 2,
+      indentWithTabs: false,
+    };
+
+    // ── Create editors ──
+    var inputEditor = CodeMirror(document.getElementById("editor-input"), Object.assign({}, cmDefaults, {
+      value: sampleHTML,
+    }));
+
+    // ── State ──
+    var debounceTimer;
+
+    // ── Helpers ──
+    function getInput() {
+      return inputEditor.getValue();
+    }
+
+    function setInput(text) {
+      inputEditor.setValue(text);
+    }
+
+    function toast(msg) {
+      var el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(function() { el.classList.remove("show"); }, 2000);
+    }
+
+    function updateStatus(src) {
+      var len = src.length;
+      var lines = src.split("\n").length;
+      var sizeStr = len > 1024 ? (len / 1024).toFixed(1) + " KB" : len + " B";
+      document.getElementById("status").textContent = lines + " lines \u00B7 " + sizeStr;
+    }
+
+    // ── Beautify / Minify ──
+    function beautify(src) {
+      return html_beautify(src, {
+        indent_size: 2,
+        indent_char: " ",
+        max_preserve_newlines: 2,
+        preserve_newlines: true,
+        indent_inner_html: true,
+        wrap_line_length: 120,
+        wrap_attributes: "auto",
+        end_with_newline: true,
+      });
+    }
+
+    function minify(src) {
+      return src
+        .replace(/<!--[\s\S]*?-->/g, "")
+        .replace(/\n\s*/g, "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/>\s+</g, "><")
+        .trim();
+    }
+
+    // ── DOM Tree builder ──
+    function escapeHtml(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function buildDOMTree(src) {
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(src, "text/html");
+      var container = document.getElementById("dom-tree");
+      container.innerHTML = "";
+      renderNode(doc.documentElement, container);
+    }
+
+    function renderNode(node, parent) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        var text = node.textContent.trim();
+        if (!text) return;
+        var div = document.createElement("div");
+        div.className = "tree-node";
+        var truncated = text.length > 80 ? text.slice(0, 80) + "\u2026" : text;
+        div.innerHTML = '<span class="tree-text">"' + escapeHtml(truncated) + '"</span>';
+        parent.appendChild(div);
+        return;
+      }
+
+      if (node.nodeType === Node.COMMENT_NODE) {
+        var div = document.createElement("div");
+        div.className = "tree-node";
+        div.innerHTML = '<span class="tree-comment">&lt;!-- ' + escapeHtml(node.textContent.trim().slice(0, 60)) + ' --&gt;</span>';
+        parent.appendChild(div);
+        return;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+      var wrapper = document.createElement("div");
+      wrapper.className = "tree-node";
+
+      var hasChildren = node.childNodes.length > 0;
+
+      var attrStr = "";
+      for (var i = 0; i < node.attributes.length; i++) {
+        var attr = node.attributes[i];
+        attrStr += ' <span class="tree-attr-name">' + escapeHtml(attr.name) + '</span>=<span class="tree-attr-val">"' + escapeHtml(attr.value) + '"</span>';
+      }
+
+      var label = document.createElement("div");
+      label.innerHTML = '<span class="tree-tag">&lt;' + node.tagName.toLowerCase() + attrStr + '&gt;</span>';
+
+      if (hasChildren) {
+        label.className = "tree-toggle open";
+        label.addEventListener("click", function() { this.classList.toggle("open"); });
+
+        var children = document.createElement("div");
+        children.className = "tree-children";
+        for (var i = 0; i < node.childNodes.length; i++) {
+          renderNode(node.childNodes[i], children);
+        }
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(children);
+      } else {
+        wrapper.appendChild(label);
+      }
+
+      parent.appendChild(wrapper);
+    }
+
+    // ── Validation ──
+    function validate(src) {
+      var list = document.getElementById("validate-list");
+      var issues = [];
+
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(src, "text/html");
+      var parserErrors = doc.querySelectorAll("parsererror");
+      parserErrors.forEach(function(e) {
+        issues.push({ type: "error", msg: e.textContent.trim().slice(0, 120) });
+      });
+
+      var voidElements = ["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"];
+
+      var openTags = [];
+      var tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g;
+      var match;
+      while ((match = tagRegex.exec(src)) !== null) {
+        var full = match[0];
+        var tag = match[1].toLowerCase();
+        if (voidElements.indexOf(tag) !== -1) continue;
+        if (full.indexOf("</") === 0) {
+          if (openTags.length && openTags[openTags.length - 1] === tag) {
+            openTags.pop();
+          } else {
+            issues.push({ type: "warning", msg: "Unexpected closing tag: </" + tag + ">" });
+          }
+        } else if (full.slice(-2) !== "/>") {
+          openTags.push(tag);
+        }
+      }
+      openTags.forEach(function(tag) {
+        issues.push({ type: "warning", msg: "Possibly unclosed tag: <" + tag + ">" });
+      });
+
+      if (!/<!doctype\s+html>/i.test(src)) {
+        issues.push({ type: "warning", msg: "Missing <!DOCTYPE html>" });
+      }
+      if (!/<meta[^>]+charset/i.test(src)) {
+        issues.push({ type: "warning", msg: "Missing charset meta tag" });
+      }
+      if (!/<title[\s>]/i.test(src)) {
+        issues.push({ type: "warning", msg: 'Missing <title> element' });
+      }
+
+      if (issues.length === 0) {
+        list.innerHTML = '<div class="validation-item ok">No issues found.</div>';
+      } else {
+        list.innerHTML = issues
+          .map(function(i) { return '<div class="validation-item ' + i.type + '">' + i.type.toUpperCase() + ': ' + escapeHtml(i.msg) + '</div>'; })
+          .join("");
+      }
+    }
+
+    // ── Update pipeline ──
+    function scheduleUpdate() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(runUpdate, 200);
+    }
+
+    function runUpdate() {
+      var src = getInput();
+      updateStatus(src);
+
+      var activeTab = document.querySelector(".tab.active");
+      var tabName = activeTab ? activeTab.dataset.tab : "";
+      if (tabName === "preview") updatePreview(src);
+      if (tabName === "dom-tree") buildDOMTree(src);
+      if (tabName === "validate") validate(src);
+    }
+
+    function updatePreview(src) {
+      document.getElementById("preview-frame").srcdoc = src;
+    }
+
+    // ── Listen to input changes ──
+    inputEditor.on("changes", scheduleUpdate);
+
+    // ── Tab switching ──
+    document.querySelectorAll(".tab").forEach(function(tab) {
+      tab.addEventListener("click", function() {
+        document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+        document.querySelectorAll(".tab-panel").forEach(function(p) { p.classList.remove("active"); });
+        tab.classList.add("active");
+        document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+
+        var src = getInput();
+        if (tab.dataset.tab === "preview") updatePreview(src);
+        if (tab.dataset.tab === "dom-tree") buildDOMTree(src);
+        if (tab.dataset.tab === "validate") validate(src);
+
+      });
+    });
+
+    // ── Toolbar actions ──
+    document.getElementById("btn-beautify").addEventListener("click", function() {
+      setInput(beautify(getInput()));
+      toast("Beautified");
+    });
+
+    document.getElementById("btn-minify").addEventListener("click", function() {
+      setInput(minify(getInput()));
+      toast("Minified");
+    });
+
+    document.getElementById("btn-copy").addEventListener("click", function() {
+      navigator.clipboard.writeText(getInput()).then(function() {
+        toast("Copied to clipboard");
+      });
+    });
+
+    document.getElementById("btn-open").addEventListener("click", function() {
+      document.getElementById("file-input").click();
+    });
+
+    document.getElementById("file-input").addEventListener("change", function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      loadFile(file);
+      e.target.value = "";
+    });
+
+    document.getElementById("btn-wrap").addEventListener("click", function(e) {
+      var wrap = !inputEditor.getOption("lineWrapping");
+      inputEditor.setOption("lineWrapping", wrap);
+      e.target.classList.toggle("active", wrap);
+    });
+
+    // ── File loading ──
+    function loadFile(file) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        setInput(reader.result);
+        toast("Loaded " + file.name);
+      };
+      reader.readAsText(file);
+    }
+
+    // ── Drag and drop ──
+    var dragCounter = 0;
+    var overlay = document.getElementById("drop-overlay");
+
+    document.addEventListener("dragenter", function(e) {
+      e.preventDefault();
+      dragCounter++;
+      overlay.classList.add("visible");
+    });
+    document.addEventListener("dragleave", function(e) {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        overlay.classList.remove("visible");
+      }
+    });
+    document.addEventListener("dragover", function(e) { e.preventDefault(); });
+    document.addEventListener("drop", function(e) {
+      e.preventDefault();
+      dragCounter = 0;
+      overlay.classList.remove("visible");
+      var file = e.dataTransfer.files[0];
+      if (file) loadFile(file);
+    });
+
+    // ── Resizable gutter ──
+    var gutter = document.getElementById("gutter");
+    var leftPane = document.querySelector(".pane-left");
+    var rightPane = document.querySelector(".pane-right");
+    var isDragging = false;
+
+    gutter.addEventListener("mousedown", function(e) {
+      isDragging = true;
+      gutter.classList.add("dragging");
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", function(e) {
+      if (!isDragging) return;
+      var container = document.querySelector(".split-container");
+      var rect = container.getBoundingClientRect();
+      var ratio = (e.clientX - rect.left) / rect.width;
+      var clamped = Math.max(0.15, Math.min(0.85, ratio));
+      leftPane.style.flex = "none";
+      rightPane.style.flex = "none";
+      leftPane.style.width = (clamped * 100) + "%";
+      rightPane.style.width = ((1 - clamped) * 100) + "%";
+      inputEditor.refresh();
+    });
+    document.addEventListener("mouseup", function() {
+      if (!isDragging) return;
+      isDragging = false;
+      gutter.classList.remove("dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      inputEditor.refresh();
+    });
+
+    // ── Keyboard shortcuts ──
+    document.addEventListener("keydown", function(e) {
+      if (e.ctrlKey && e.shiftKey && e.key === "F") {
+        e.preventDefault();
+        setInput(beautify(getInput()));
+        toast("Beautified");
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === "M") {
+        e.preventDefault();
+        setInput(minify(getInput()));
+        toast("Minified");
+      }
+    });
+
+    // ── Initial run ──
+    document.getElementById("btn-wrap").classList.add("active");
+    runUpdate();
+  </script>
+</body>
+</html>
