@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Table → Excel</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --border-soft: #21262d;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --accent-bg: #1f6feb33;
+      /* Excel-ish grid palette */
+      --grid-cell: #ffffff;
+      --grid-text: #1a1a1a;
+      --grid-line: #d4d4d4;
+      --grid-header-bg: #f3f3f3;
+      --grid-header-text: #5a5a5a;
+      --grid-corner-bg: #e8e8e8;
+      --grid-select: #d3e3f5;
+      --grid-select-border: #217346; /* Excel green */
+      --grid-header-active: #c6e0c6;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1.25rem;
+    }
+
+    header { text-align: center; }
+    header h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f0f6fc;
+    }
+    header p {
+      margin-top: 0.4rem;
+      color: var(--text-dim);
+      font-size: 0.92rem;
+    }
+    header a { color: var(--accent); text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(0, 1.4fr);
+      gap: 1.25rem;
+      flex: 1;
+      min-height: 0;
+    }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 320px;
+      width: 100%;
+      resize: vertical;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      tab-size: 2;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+
+    .output-area {
+      flex: 1;
+      min-height: 320px;
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .placeholder {
+      margin: auto;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .sheet-block { display: flex; flex-direction: column; gap: 0.6rem; }
+    .sheet-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .sheet-title {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-right: auto;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 7px;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid var(--border);
+      background: #21262d;
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:hover { background: #2d333b; }
+    button.primary {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    button.primary:hover { background: #2ea043; }
+    button.copied { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+
+    /* Excel-like grid */
+    .grid-scroll {
+      overflow: auto;
+      border: 1px solid var(--grid-line);
+      border-radius: 6px;
+      max-height: 420px;
+      background: var(--grid-cell);
+      user-select: none;
+    }
+    table.sheet {
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      color: var(--grid-text);
+      font-family: Calibri, "Segoe UI", system-ui, sans-serif;
+      table-layout: auto;
+    }
+    table.sheet th, table.sheet td {
+      border: 1px solid var(--grid-line);
+      padding: 4px 8px;
+      text-align: left;
+      vertical-align: top;
+      white-space: pre-wrap;
+      min-width: 60px;
+      max-width: 340px;
+      overflow-wrap: anywhere;
+    }
+    /* column header row + row-number column */
+    table.sheet th.colhead, table.sheet th.rowhead, table.sheet th.corner {
+      background: var(--grid-header-bg);
+      color: var(--grid-header-text);
+      font-weight: 600;
+      text-align: center;
+      position: sticky;
+      cursor: pointer;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    table.sheet th.corner { background: var(--grid-corner-bg); cursor: default; }
+    table.sheet thead th { position: sticky; top: 0; z-index: 3; }
+    table.sheet th.rowhead { position: sticky; left: 0; z-index: 2; }
+    table.sheet th.corner { left: 0; top: 0; z-index: 4; }
+    table.sheet th.colhead.active, table.sheet th.rowhead.active {
+      background: var(--grid-header-active);
+      color: #143d14;
+    }
+
+    /* the markdown header row (first data row) shown bold like Excel content */
+    table.sheet tr.mdheader td { font-weight: 700; background: #fafafa; }
+
+    table.sheet td.sel {
+      background: var(--grid-select);
+    }
+    table.sheet td a { color: #0563c1; }
+
+    table.sheet td code {
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 0.78rem;
+      background: #00000010;
+      padding: 0 3px;
+      border-radius: 3px;
+    }
+
+    .hint { font-size: 0.75rem; color: var(--text-dim); }
+
+    footer {
+      text-align: center;
+      color: #484f58;
+      font-size: 0.78rem;
+    }
+    footer a { color: #484f58; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(150%);
+      background: #1f6feb;
+      color: #fff;
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      box-shadow: 0 6px 24px #0008;
+      transition: transform 0.25s ease;
+      z-index: 50;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Markdown Table → Excel</h1>
+    <p>Paste a markdown table, select cells, and copy them straight into Excel — formatting and line breaks preserved.</p>
+  </header>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="panel-label">
+        <span>Markdown input</span>
+        <button id="sampleBtn" style="margin-left:auto;padding:0.25rem 0.6rem;font-size:0.72rem;">Load sample</button>
+        <button id="clearBtn" style="padding:0.25rem 0.6rem;font-size:0.72rem;">Clear</button>
+      </div>
+      <textarea id="input" placeholder="Paste markdown here. Any text outside of tables is ignored.&#10;&#10;| Name | Role | Notes |&#10;|------|------|-------|&#10;| **Ada** | Engineer | Line one&lt;br&gt;Line two |&#10;| *Grace* | `Compiler` | [Docs](https://example.com) |" spellcheck="false"></textarea>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">
+        <span>Excel preview</span>
+        <span class="hint" style="margin-left:auto;">Click-drag to select · click headers to select column/row · double-click corner to select all</span>
+      </div>
+      <div class="output-area" id="output">
+        <div class="placeholder">Your tables will appear here as selectable spreadsheets.<br>Paste some markdown on the left to begin.</div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <a href="index.html">← back to vibed-tools</a>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /* ---------- Markdown table extraction ---------- */
+
+    // A table = a row line, a delimiter line (---|:--: etc.), then >=0 row lines.
+    function isDelimiterLine(line) {
+      const t = line.trim();
+      if (!t.includes("-")) return false;
+      const inner = t.replace(/^\||\|$/g, "");
+      const cells = inner.split("|");
+      if (!cells.length) return false;
+      return cells.every(c => /^\s*:?-+:?\s*$/.test(c));
+    }
+
+    function looksLikeRow(line) {
+      return line.includes("|") && line.trim() !== "";
+    }
+
+    function splitRow(line) {
+      let t = line.trim();
+      // Drop a single leading/trailing pipe (the optional table borders).
+      if (t.startsWith("|")) t = t.slice(1);
+      if (t.endsWith("|")) t = t.slice(0, -1);
+      // Split on unescaped pipes.
+      const cells = [];
+      let cur = "";
+      for (let i = 0; i < t.length; i++) {
+        const ch = t[i];
+        if (ch === "\\" && t[i + 1] === "|") { cur += "|"; i++; continue; }
+        if (ch === "|") { cells.push(cur); cur = ""; continue; }
+        cur += ch;
+      }
+      cells.push(cur);
+      return cells.map(c => c.trim());
+    }
+
+    // Returns array of tables; each table is { rows: [[cellSrc,...], ...] } where
+    // the first row is the header row.
+    function extractTables(md) {
+      const lines = md.replace(/\r\n?/g, "\n").split("\n");
+      const tables = [];
+      let i = 0;
+      while (i < lines.length) {
+        if (looksLikeRow(lines[i]) && i + 1 < lines.length && isDelimiterLine(lines[i + 1])) {
+          const header = splitRow(lines[i]);
+          const rows = [header];
+          let j = i + 2;
+          while (j < lines.length && looksLikeRow(lines[j]) && !isDelimiterLine(lines[j])) {
+            const cells = splitRow(lines[j]);
+            // normalise to header width
+            while (cells.length < header.length) cells.push("");
+            if (cells.length > header.length) cells.length = header.length;
+            rows.push(cells);
+            j++;
+          }
+          tables.push({ rows });
+          i = j;
+        } else {
+          i++;
+        }
+      }
+      return tables;
+    }
+
+    /* ---------- Inline markdown → HTML ---------- */
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    }
+
+    function escapeAttr(s) {
+      return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    }
+
+    // Convert one cell's markdown source to safe HTML.
+    // Line breaks: <br>, <br/>, and a trailing backslash become newlines.
+    function inlineToHtml(src) {
+      // Normalise explicit line breaks to a sentinel before escaping.
+      let s = src
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/\\\n/g, "\n")
+        .replace(/  +\n/g, "\n");
+
+      // Tokenise by escaping everything, then re-introduce a small set of tags.
+      // We work on the escaped string and use placeholders to avoid double-processing.
+      const tokens = [];
+      const stash = (html) => {
+        tokens.push(html);
+        return ` ${tokens.length - 1} `;
+      };
+
+      // 1. inline code first (so its contents aren't formatted)
+      s = s.replace(/`([^`]+)`/g, (_, code) => stash(`<code>${escapeHtml(code)}</code>`));
+
+      // 2. links [text](url)
+      s = s.replace(/\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_, text, url) => {
+        const safeUrl = /^(https?:|mailto:|#|\/|tel:)/i.test(url) ? url : "#";
+        return stash(`<a href="${escapeAttr(safeUrl)}">${escapeHtml(text)}</a>`);
+      });
+
+      // 3. images ![alt](url) -> show alt text (Excel can't paste inline images via HTML clipboard reliably)
+      s = s.replace(/!\[([^\]]*)\]\([^)]*\)/g, (_, alt) => escapeHtml(alt));
+
+      // Escape the remaining plain text.
+      s = escapeHtml(s);
+
+      // 4. bold + italic on the escaped text
+      s = s.replace(/\*\*\*([^*]+)\*\*\*/g, "<b><i>$1</i></b>");
+      s = s.replace(/___([^_]+)___/g, "<b><i>$1</i></b>");
+      s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+      s = s.replace(/__([^_]+)__/g, "<b>$1</b>");
+      s = s.replace(/\*([^*]+)\*/g, "<i>$1</i>");
+      s = s.replace(/(^|[\s(])_([^_]+)_($|[\s).,!?])/g, "$1<i>$2</i>$3");
+      s = s.replace(/~~([^~]+)~~/g, "<s>$1</s>");
+
+      // 5. newlines -> <br>
+      s = s.replace(/\n/g, "<br>");
+
+      // restore stashed tokens
+      s = s.replace(/ (\d+) /g, (_, n) => tokens[+n]);
+      return s;
+    }
+
+    /* ---------- Rendering the Excel-like grid ---------- */
+
+    const output = document.getElementById("output");
+    const input = document.getElementById("input");
+
+    function colName(n) {
+      let s = "";
+      n += 1;
+      while (n > 0) {
+        const r = (n - 1) % 26;
+        s = String.fromCharCode(65 + r) + s;
+        n = Math.floor((n - 1) / 26);
+      }
+      return s;
+    }
+
+    function render() {
+      const tables = extractTables(input.value);
+      output.innerHTML = "";
+
+      if (!tables.length) {
+        const ph = document.createElement("div");
+        ph.className = "placeholder";
+        ph.innerHTML = "No markdown table found yet.<br>Paste a table on the left — text outside tables is ignored.";
+        output.appendChild(ph);
+        return;
+      }
+
+      tables.forEach((table, idx) => output.appendChild(buildSheet(table, idx)));
+    }
+
+    function buildSheet(table, idx) {
+      const block = document.createElement("div");
+      block.className = "sheet-block";
+
+      const nCols = table.rows[0].length;
+      const nRows = table.rows.length;
+
+      const toolbar = document.createElement("div");
+      toolbar.className = "sheet-toolbar";
+      const title = document.createElement("span");
+      title.className = "sheet-title";
+      title.textContent = `Table ${idx + 1} — ${nRows} row${nRows !== 1 ? "s" : ""} × ${nCols} col${nCols !== 1 ? "s" : ""}`;
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "primary";
+      copyBtn.textContent = "Copy selection";
+      toolbar.append(title, copyBtn);
+
+      const scroll = document.createElement("div");
+      scroll.className = "grid-scroll";
+
+      const tbl = document.createElement("table");
+      tbl.className = "sheet";
+
+      // header row: corner + column letters
+      const thead = document.createElement("thead");
+      const headTr = document.createElement("tr");
+      const corner = document.createElement("th");
+      corner.className = "corner";
+      corner.title = "Select all (double-click)";
+      headTr.appendChild(corner);
+      for (let c = 0; c < nCols; c++) {
+        const th = document.createElement("th");
+        th.className = "colhead";
+        th.textContent = colName(c);
+        th.dataset.col = c;
+        headTr.appendChild(th);
+      }
+      thead.appendChild(headTr);
+      tbl.appendChild(thead);
+
+      // body
+      const tbody = document.createElement("tbody");
+      const cellEls = []; // cellEls[r][c]
+      for (let r = 0; r < nRows; r++) {
+        const tr = document.createElement("tr");
+        if (r === 0) tr.className = "mdheader";
+        const rh = document.createElement("th");
+        rh.className = "rowhead";
+        rh.textContent = r + 1;
+        rh.dataset.row = r;
+        tr.appendChild(rh);
+        cellEls[r] = [];
+        for (let c = 0; c < nCols; c++) {
+          const td = document.createElement("td");
+          td.innerHTML = inlineToHtml(table.rows[r][c] || "");
+          td.dataset.row = r;
+          td.dataset.col = c;
+          tr.appendChild(td);
+          cellEls[r][c] = td;
+        }
+        tbody.appendChild(tr);
+      }
+      tbl.appendChild(tbody);
+      scroll.appendChild(tbl);
+
+      const hint = document.createElement("div");
+      hint.className = "hint";
+
+      block.append(toolbar, scroll, hint);
+
+      /* ----- selection state + interaction ----- */
+      const sel = { r0: 0, c0: 0, r1: nRows - 1, c1: nCols - 1 }; // default: all
+      let dragging = false;
+      let anchor = null;
+
+      function bounds() {
+        return {
+          rMin: Math.min(sel.r0, sel.r1), rMax: Math.max(sel.r0, sel.r1),
+          cMin: Math.min(sel.c0, sel.c1), cMax: Math.max(sel.c0, sel.c1),
+        };
+      }
+
+      function paint() {
+        const { rMin, rMax, cMin, cMax } = bounds();
+        for (let r = 0; r < nRows; r++) {
+          for (let c = 0; c < nCols; c++) {
+            const on = r >= rMin && r <= rMax && c >= cMin && c <= cMax;
+            cellEls[r][c].classList.toggle("sel", on);
+          }
+        }
+        // header highlight
+        headTr.querySelectorAll("th.colhead").forEach(th => {
+          const c = +th.dataset.col;
+          th.classList.toggle("active", c >= cMin && c <= cMax);
+        });
+        tbody.querySelectorAll("th.rowhead").forEach(th => {
+          const r = +th.dataset.row;
+          th.classList.toggle("active", r >= rMin && r <= rMax);
+        });
+        const rows = rMax - rMin + 1, cols = cMax - cMin + 1;
+        hint.textContent = `Selected ${rows} × ${cols} (${rows * cols} cells)`;
+      }
+
+      tbody.addEventListener("mousedown", (e) => {
+        const td = e.target.closest("td");
+        if (!td) return;
+        e.preventDefault();
+        dragging = true;
+        anchor = { r: +td.dataset.row, c: +td.dataset.col };
+        sel.r0 = sel.r1 = anchor.r;
+        sel.c0 = sel.c1 = anchor.c;
+        paint();
+      });
+      tbody.addEventListener("mouseover", (e) => {
+        if (!dragging) return;
+        const td = e.target.closest("td");
+        if (!td) return;
+        sel.r1 = +td.dataset.row;
+        sel.c1 = +td.dataset.col;
+        paint();
+      });
+      window.addEventListener("mouseup", () => { dragging = false; });
+
+      // header clicks select whole columns / rows
+      headTr.addEventListener("click", (e) => {
+        const th = e.target.closest("th.colhead");
+        if (!th) return;
+        const c = +th.dataset.col;
+        sel.r0 = 0; sel.r1 = nRows - 1; sel.c0 = sel.c1 = c;
+        paint();
+      });
+      tbody.addEventListener("click", (e) => {
+        const th = e.target.closest("th.rowhead");
+        if (!th) return;
+        const r = +th.dataset.row;
+        sel.c0 = 0; sel.c1 = nCols - 1; sel.r0 = sel.r1 = r;
+        paint();
+      });
+      corner.addEventListener("dblclick", () => {
+        sel.r0 = 0; sel.c0 = 0; sel.r1 = nRows - 1; sel.c1 = nCols - 1;
+        paint();
+      });
+      corner.addEventListener("click", () => {
+        sel.r0 = 0; sel.c0 = 0; sel.r1 = nRows - 1; sel.c1 = nCols - 1;
+        paint();
+      });
+
+      copyBtn.addEventListener("click", () => doCopy(cellEls, bounds(), copyBtn));
+
+      paint();
+      return block;
+    }
+
+    /* ---------- Copy: HTML table + TSV ---------- */
+
+    // Plain-text version of a cell: tags stripped, <br> -> newline.
+    function cellPlainText(td) {
+      const clone = td.cloneNode(true);
+      clone.querySelectorAll("br").forEach(br => br.replaceWith("\n"));
+      return clone.textContent;
+    }
+
+    function tsvEscape(text) {
+      if (/[\t\n"]/.test(text)) {
+        return '"' + text.replace(/"/g, '""') + '"';
+      }
+      return text;
+    }
+
+    function doCopy(cellEls, b, btn) {
+      const { rMin, rMax, cMin, cMax } = b;
+
+      // Build HTML table (Excel reads this and keeps bold/italic/links/newlines).
+      let html = '<table border="1" cellspacing="0" cellpadding="2" style="border-collapse:collapse">';
+      const tsvRows = [];
+      for (let r = rMin; r <= rMax; r++) {
+        html += "<tr>";
+        const tsvCells = [];
+        for (let c = cMin; c <= cMax; c++) {
+          const td = cellEls[r][c];
+          const tag = r === 0 ? "th" : "td";
+          const weight = r === 0 ? "font-weight:bold;" : "";
+          html += `<${tag} style="border:1px solid #ccc;vertical-align:top;${weight}">${td.innerHTML}</${tag}>`;
+          tsvCells.push(tsvEscape(cellPlainText(td)));
+        }
+        html += "</tr>";
+        tsvRows.push(tsvCells.join("\t"));
+      }
+      html += "</table>";
+      const tsv = tsvRows.join("\n");
+
+      writeClipboard(html, tsv)
+        .then(() => flash(btn, "Copied!"))
+        .catch(() => {
+          // Fallback: plain-text TSV via execCommand.
+          if (legacyCopy(tsv)) flash(btn, "Copied (text)");
+          else toast("Copy failed — your browser blocked clipboard access.");
+        });
+    }
+
+    function writeClipboard(html, text) {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        });
+        return navigator.clipboard.write([item]);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      return Promise.reject(new Error("no clipboard API"));
+    }
+
+    function legacyCopy(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    function flash(btn, label) {
+      const orig = btn.textContent;
+      btn.textContent = label;
+      btn.classList.add("copied");
+      toast("Selection copied — paste into Excel.");
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove("copied"); }, 1400);
+    }
+
+    /* ---------- toast ---------- */
+    const toastEl = document.getElementById("toast");
+    let toastTimer = null;
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    /* ---------- wiring ---------- */
+    input.addEventListener("input", render);
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      input.value = "";
+      render();
+      input.focus();
+    });
+
+    const SAMPLE = `# Quarterly report
+
+Some intro prose that should be ignored.
+
+| Product | Status | Notes |
+|---------|:------:|-------|
+| **Widget** | *Shipping* | First line<br>Second line |
+| Gadget | \`beta\` | See [the docs](https://example.com) for details |
+| ~~Gizmo~~ | Cancelled | Combined **bold** and *italic* text |
+
+More prose here, also ignored.
+
+| Region | Q1 | Q2 |
+|--------|----|----|
+| North  | 12 | 18 |
+| South  | 9  | 21 |`;
+
+    document.getElementById("sampleBtn").addEventListener("click", () => {
+      input.value = SAMPLE;
+      render();
+    });
+
+    render();
+  })();
+  </script>
+</body>
+</html>
